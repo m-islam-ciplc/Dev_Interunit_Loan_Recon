@@ -106,13 +106,11 @@ function checkBothFilesSelected() {
     if (file1 && file2) {
         // Check if same file is selected
         if (file1.name === file2.name) {
-            uploadMsg.textContent = 'Warning: Same file selected for both companies. Please select different files.';
-            uploadMsg.style.color = 'orange';
+            uploadMsg.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Warning: Same file selected for both companies. Please select different files.</div>';
             parseBtn.disabled = true;
             return;
         } else {
-            uploadMsg.textContent = '';
-            uploadMsg.style.color = 'red';
+            uploadMsg.innerHTML = '';
         }
     }
     
@@ -137,12 +135,12 @@ async function uploadFile() {
     const uploadResult = document.getElementById('upload-result');
     
     if (!fileInput1.files[0] || !fileInput2.files[0]) {
-        uploadMsg.textContent = 'Please select both files to upload.';
+        uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Please select both files to upload.</div>';
         return;
     }
     
     if (!sheetSelect1.value || !sheetSelect2.value) {
-        uploadMsg.textContent = 'Please select sheets for both files.';
+        uploadMsg.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Please select sheets for both files.</div>';
         return;
     }
     

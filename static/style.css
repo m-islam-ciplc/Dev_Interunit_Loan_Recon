@@ -44,7 +44,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
     border: 1px solid #ccc;
     padding: 24px 32px 18px 32px;
     border-radius: 6px;
-    max-width: 750px;
+    max-width: 1250px;
     margin-left: 0;
 }
 
@@ -80,7 +80,7 @@ h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
 }
 
 .parser-row-parse { 
-    justify-content: flex-end; 
+    justify-content: flex-start; 
 }
 
 
@@ -220,7 +220,7 @@ h6 {
 /* Notifications */
 .alert {
     font-size: 14px !important;
-    padding: 8px 12px !important;
+    padding: 6px 10px !important;
 }
 
 /* Dropdowns */

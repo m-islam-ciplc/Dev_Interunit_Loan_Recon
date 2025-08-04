@@ -79,7 +79,7 @@
                     <div class="mb-4">
                         <h6>First Company Ledger</h6>
                         <div class="parser-row">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="this.nextElementSibling.click()">Select File</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="this.nextElementSibling.click()"><i class="bi bi-folder me-2"></i>Select File</button>
                             <input type="file" name="file1" class="parser-input file-input" style="display:none;" accept=".xlsx,.xls" required onchange="handleFileSelect(this, 1)">
                             <span class="file-chosen" id="file-chosen-1" style="margin-left:10px; font-size:14px; color:#222;">No file chosen</span>
                         </div>
@@ -94,7 +94,7 @@
                     <div class="mb-4">
                         <h6>Second Company Ledger</h6>
                         <div class="parser-row">
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="this.nextElementSibling.click()">Select File</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="this.nextElementSibling.click()"><i class="bi bi-folder me-2"></i>Select File</button>
                             <input type="file" name="file2" class="parser-input file-input" style="display:none;" accept=".xlsx,.xls" required onchange="handleFileSelect(this, 2)">
                             <span class="file-chosen" id="file-chosen-2" style="margin-left:10px; font-size:14px; color:#222;">No file chosen</span>
                         </div>
@@ -106,13 +106,13 @@
                     </div>
                     
                     <div class="parser-row parser-row-parse">
-                        <button type="submit" class="btn btn-sm btn-primary" id="parse-btn" disabled>Upload Pair</button>
+                        <button type="submit" class="btn btn-sm btn-secondary" id="parse-btn" disabled><i class="bi bi-upload me-2"></i>Upload Pair</button>
                     </div>
                 </form>
                 <div id="upload-msg" style="color: red; margin-top:10px"></div>
                 <div id="upload-result" style="margin-top:10px;"></div>
                 <div id="recent-uploads-list" style="margin-top:20px;"></div>
-                <button type="button" id="clear-recent-uploads-btn" class="btn btn-sm btn-outline-danger" style="margin-top:10px;" onclick="clearRecentUploads()">Clear File List</button>
+                <button type="button" id="clear-recent-uploads-btn" class="btn btn-sm btn-outline-danger" style="margin-top:10px;" onclick="clearRecentUploads()"><i class="bi bi-trash me-2"></i>Clear File List</button>
             </div>
         </div>
 
@@ -170,7 +170,7 @@
                         </div>
                         <div class="col-md-4">
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearReconciliationSelection()">
-                                <i class="bi bi-x-circle me-1"></i>Clear Selection
+                                <i class="bi bi-x-circle me-2"></i>Clear Selection
                             </button>
                         </div>
                     </div>
@@ -215,7 +215,7 @@
                         </div>
                         <div class="col-md-4">
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearMatchedCompanySelection()">
-                                <i class="bi bi-x-circle me-1"></i>Clear Selection
+                                <i class="bi bi-x-circle me-2"></i>Clear Selection
                             </button>
                         </div>
                     </div>
@@ -259,7 +259,7 @@
                         </div>
                         <div class="col-md-4">
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearUnmatchedCompanySelection()">
-                                <i class="bi bi-x-circle me-1"></i>Clear Selection
+                                <i class="bi bi-x-circle me-2"></i>Clear Selection
                             </button>
                         </div>
                     </div>
