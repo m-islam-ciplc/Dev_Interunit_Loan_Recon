@@ -83,48 +83,9 @@ h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
     justify-content: flex-end; 
 }
 
-.parser-parse-btn {
-    background: #0d6efd;
-    border: 1px solid #0b5ed7;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 6px 12px;
-    color: #fff;
-    transition: background 0.2s, border 0.2s;
-    white-space: nowrap;
-    min-width: 120px;
-}
 
-.parser-parse-btn:disabled {
-    background: #6c757d;
-    color: #fff;
-    cursor: not-allowed;
-    border-color: #6c757d;
-}
 
-.parser-parse-btn:hover:not(:disabled) {
-    background: #0b5ed7;
-    border-color: #0a58ca;
-}
 
-.parser-file-btn {
-    background: #0d6efd;
-    border: 1px solid #0b5ed7;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 6px 12px;
-    color: #fff;
-    transition: background 0.2s, border 0.2s;
-    white-space: nowrap;
-    min-width: 120px;
-}
-
-.parser-file-btn:hover {
-    background: #0b5ed7;
-    border-color: #0a58ca;
-}
 
 .file-chosen {
     background: #fff;
@@ -243,20 +204,17 @@ h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
     letter-spacing: 0.5px;
 }
 
-/* Buttons */
-.btn-success {
-    background-color: #37a000;
-    border-color: #318d01;
-    color: #fff;
-}
 
-.btn-success:hover {
-    background-color: #45c203;
-}
 
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+    font-weight: 600;
+}
+
+h6 {
+    font-size: 14px;
+    font-weight: 600;
 }
 
 /* Notifications */
@@ -264,6 +222,44 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 14px !important;
     padding: 8px 12px !important;
 }
+
+/* Dropdowns */
+.dropdown-toggle {
+    font-size: 14px !important;
+}
+
+.dropdown-menu {
+    font-size: 14px !important;
+}
+
+.dropdown-item {
+    font-size: 14px !important;
+}
+
+/* Select dropdowns and placeholder text */
+.form-select {
+    font-size: 14px !important;
+}
+
+.form-select option {
+    font-size: 14px !important;
+}
+
+/* Recent uploads */
+#recent-uploads-list {
+    font-size: 14px !important;
+}
+
+#recent-uploads-list * {
+    font-size: 14px !important;
+}
+
+/* Dropdown labels */
+.form-label {
+    font-size: 14px !important;
+}
+
+
 
 /* Transaction tables */
 .matched-transactions-wrapper,
