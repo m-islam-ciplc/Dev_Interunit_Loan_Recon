@@ -297,7 +297,7 @@ h6 {
 .unmatched-transactions-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: 10px;
     font-family: 'Ubuntu', 'Segoe UI', sans-serif;
     background: #fff;
 }
@@ -307,7 +307,7 @@ h6 {
 .unmatched-transactions-table th, 
 .unmatched-transactions-table td {
     border: 1px solid #e1e6ef;
-    font-size: 11px;
+    font-size: 10px;
     font-family: 'Ubuntu', 'Segoe UI', sans-serif;
     padding: 6px 8px;
     white-space: normal;
@@ -350,7 +350,7 @@ h6 {
     text-align: center;
     background-color: #F8F9FA;
     font-weight: bold;
-    font-size: 11px;
+    font-size: 10px;
     white-space: nowrap !important;
     word-wrap: normal !important;
     overflow-wrap: normal !important;
