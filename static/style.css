@@ -377,6 +377,43 @@ td[data-column="borrower_particulars"],
     text-align: right !important;
 }
 
+/* Audit Info text alignment */
+.audit-info-text {
+    vertical-align: top !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+}
+
+/* Remove any default pre element spacing */
+td[data-column="audit_info"] pre {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Action buttons alignment */
+.action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: flex-start;
+}
+
+/* Action button styling */
+.action-buttons .btn {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+}
+
 
 
 /* Badge styles */

@@ -702,7 +702,7 @@ function formatAuditInfo(auditInfoStr) {
                 formattedInfo += `Type: ${auditInfo.match_type}\nKeywords: ${auditInfo.keywords}\n`;
         }
         
-        return formattedInfo.trim();
+        return formattedInfo.trim().replace(/^\n+/, '');
     } catch (e) {
         console.error('Error parsing audit info:', e);
         return auditInfoStr;
@@ -916,9 +916,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
                 <td data-column="audit_info">
-                    <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 10px;">
-                        ${formatAuditInfo(match.audit_info) || ''}
-                    </pre>
+                    <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 10px;">${formatAuditInfo(match.audit_info) || ''}</pre>
                 </td>
                 <td data-column="actions">
                     <div class="action-buttons">
