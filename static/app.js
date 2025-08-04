@@ -763,7 +763,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
     let tableHTML = `
         <div class="matched-transactions-wrapper">
             <div class="matched-header">
-                <h4><i class="bi bi-link-45deg"></i> Matched Transactions (${matches.length} pairs)</h4>
+                <h5><i class="bi bi-link-45deg"></i> Matched Transactions (${matches.length} pairs)</h5>
             </div>
             <div class="table-responsive">
                 <table class="matched-transactions-table">
@@ -1420,7 +1420,7 @@ function displayUnmatchedResults(unmatched) {
     let tableHTML = `
         <div class="unmatched-transactions-wrapper">
             <div class="unmatched-header">
-                <h4><i class="bi bi-link-45deg"></i> Unmatched Transactions (${unmatched.length} records)</h4>
+                <h5><i class="bi bi-link-45deg"></i> Unmatched Transactions (${unmatched.length} records)</h5>
             </div>
             <div class="table-responsive">
                 <table class="unmatched-transactions-table">
