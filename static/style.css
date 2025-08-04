@@ -408,10 +408,19 @@ td[data-column="actions"] .btn {
     min-width: 32px !important;
     min-height: 32px !important;
     padding: 0 !important;
+    margin: 0 4px 0 0 !important;
+    border: none !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    text-align: center !important;
+    vertical-align: middle !important;
     line-height: 1 !important;
+}
+
+/* Remove margin from the last button */
+td[data-column="actions"] .btn:last-child {
+    margin-right: 0 !important;
 }
 
 
