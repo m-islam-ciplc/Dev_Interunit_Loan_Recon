@@ -13,21 +13,21 @@ h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
 
 /* Layout */
 .tab-container-vertical {
-    display: flex;
-    max-width: 1100px;
-    margin: 36px auto;
+  display: flex;
+  max-width: 1100px;
+  margin: 36px auto;
 }
 
 .tab-content-vertical {
-    flex: 1;
-    background: #fff;
-    border-radius: 0 6px 6px 0;
-    padding: 24px 32px;
-    min-height: 400px;
+  flex: 1;
+  background: #fff;
+  border-radius: 0 6px 6px 0;
+  padding: 24px 32px;
+  min-height: 400px;
 }
 
 .tab-header-vertical, .tab-btn-vertical {
-    display: none !important;
+  display: none !important;
 }
 
 .tab-pane { 
@@ -81,6 +81,11 @@ h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
 
 .parser-row-parse { 
     justify-content: flex-start; 
+}
+
+/* Increase spacing between Select Sheet label and dropdown */
+.sheet-select {
+    margin-left: 14px;
 }
 
 
