@@ -153,7 +153,7 @@ async function uploadFile() {
     parseBtn.disabled = true;
     parseBtn.textContent = 'Processing...';
     uploadMsg.textContent = '';
-    uploadResult.innerHTML = '<div style="color: blue;">Uploading file pair...</div>';
+    uploadResult.innerHTML = '<div class="alert alert-info" role="alert"><i class="bi bi-info-circle me-2"></i>Uploading file pair...</div>';
     
     try {
         const response = await fetch('/api/upload-pair', {
@@ -164,7 +164,7 @@ async function uploadFile() {
         const result = await response.json();
         
         if (response.ok) {
-            uploadResult.innerHTML = `<div style="color: green;">File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
+            uploadResult.innerHTML = `<div class="alert alert-success" role="alert"><i class="bi bi-check-circle me-2"></i>File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
             
             // Reset form
             fileInput1.value = '';
@@ -185,11 +185,11 @@ async function uploadFile() {
             }, 8000);
             
         } else {
-            uploadResult.innerHTML = `<div style="color: red;">Upload failed: ${result.error}</div>`;
+            uploadResult.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${result.error}</div>`;
         }
         
     } catch (error) {
-        uploadResult.innerHTML = `<div style="color: red;">Upload failed: ${error.message}</div>`;
+        uploadResult.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${error.message}</div>`;
     } finally {
         parseBtn.disabled = false;
         parseBtn.textContent = 'Upload Pair';
@@ -233,10 +233,10 @@ function displayData(data, columnOrder) {
     
     let tableHTML = `
         <div class="report-table-wrapper" style="max-height: 70vh; overflow-y: auto;">
-            <table class="report-table" style="border-collapse: collapse;">
-                <thead style="position: sticky; top: 0; background-color: #f8f9fa; z-index: 1;">
+            <table class="matched-transactions-table">
+                <thead>
                     <tr>
-                        ${columns.map(col => `<th style="border: 1px solid #dee2e6; padding: 8px; text-align: left; background-color: #f8f9fa;">${col}</th>`).join('')}
+                        ${columns.map(col => `<th>${col}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -255,7 +255,7 @@ function displayData(data, columnOrder) {
                             value = formatDate(value);
                         }
                     }
-                    return `<td style="border: 1px solid #dee2e6; padding: 8px;">${value}</td>`;
+                    return `<td>${value}</td>`;
                 }).join('')}
             </tr>
         `;
@@ -1320,7 +1320,7 @@ async function viewPairData(pairId) {
 // Load unmatched results
 async function loadUnmatchedResults() {
     const resultDiv = document.getElementById('unmatched-results-display');
-    resultDiv.innerHTML = '<div style="color: blue;">Loading unmatched results...</div>';
+            resultDiv.innerHTML = '<div class="alert alert-info" role="alert"><i class="bi bi-info-circle me-2"></i>Loading unmatched results...</div>';
     
     // Get selected company pair and period
     const companySelect = document.getElementById('unmatched-company-pair-select');
@@ -1367,10 +1367,10 @@ async function loadUnmatchedResults() {
         if (response.ok) {
             displayUnmatchedResults(result.unmatched);
         } else {
-            resultDiv.innerHTML = `<div style="color: red;">Failed to load unmatched results: ${result.error}</div>`;
+            resultDiv.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${result.error}</div>`;
         }
     } catch (error) {
-        resultDiv.innerHTML = `<div style="color: red;">Failed to load unmatched results: ${error.message}</div>`;
+        resultDiv.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${error.message}</div>`;
     }
 }
 
