@@ -919,13 +919,13 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                     <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 10px;">${formatAuditInfo(match.audit_info) || ''}</pre>
                 </td>
                 <td data-column="actions">
-                    <div class="action-buttons">
+                    <div class="btn-group" role="group" aria-label="Match actions">
                         <button class="btn btn-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
                             ✓
-                    </button>
+                        </button>
                         <button class="btn btn-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
                             ✗
-                    </button>
+                        </button>
                     </div>
                 </td>
             </tr>
