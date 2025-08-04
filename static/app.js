@@ -916,7 +916,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
                 <td data-column="audit_info">
-                    <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 10px;">${formatAuditInfo(match.audit_info) || ''}</pre>
+                    <div class="audit-info-text">${(formatAuditInfo(match.audit_info) || '').replace(/\n/g, '<br>')}</div>
                 </td>
                 <td data-column="actions">
                     <div class="btn-group" role="group" aria-label="Match actions">

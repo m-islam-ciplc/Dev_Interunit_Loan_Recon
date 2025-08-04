@@ -341,7 +341,7 @@ h6 {
 .matched-transactions-table td, 
 .unmatched-transactions-table td {
     vertical-align: top !important;
-    white-space: pre-wrap !important;
+    white-space: normal !important;
     padding: 4px 4px;
     line-height: 1.3;
 }
@@ -377,19 +377,11 @@ td[data-column="borrower_particulars"],
     text-align: right !important;
 }
 
-/* Audit Info text alignment */
+/* Clean audit info styling - inherits from general table cell rules */
 .audit-info-text {
-    vertical-align: top !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.2 !important;
-}
-
-/* Remove any default pre element spacing */
-td[data-column="audit_info"] pre {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
+    margin: 0;
+    padding: 0;
+    display: inline;
 }
 
 /* Action buttons using Bootstrap btn-group */
