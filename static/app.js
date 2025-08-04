@@ -291,7 +291,6 @@ function getStatusBadgeClass(status) {
 // Update reconciliation function to use company pairs
 async function runReconciliation() {
     const resultDiv = document.getElementById('reconciliation-result');
-    resultDiv.innerHTML = '<div style="color: blue;">Running reconciliation...</div>';
     
     // Get selected company pair and period
     const companySelect = document.getElementById('reconciliation-company-pair-select');
@@ -318,6 +317,28 @@ async function runReconciliation() {
         }
     }
     
+    // Show detailed notification about what's being reconciled
+    let notificationMessage = '<div class="alert alert-info" role="alert">';
+    notificationMessage += '<i class="bi bi-info-circle me-2"></i>';
+    notificationMessage += '<strong>Running Reconciliation for:</strong><br>';
+    
+    if (lenderCompany && borrowerCompany) {
+        notificationMessage += `<strong>Company Pair:</strong> ${lenderCompany} ↔ ${borrowerCompany}<br>`;
+    } else {
+        notificationMessage += '<strong>Company Pair:</strong> All Companies<br>';
+    }
+    
+    if (month && year) {
+        notificationMessage += `<strong>Statement Period:</strong> ${month} ${year}<br>`;
+    } else {
+        notificationMessage += '<strong>Statement Period:</strong> All Periods<br>';
+    }
+    
+    notificationMessage += '<small class="text-muted">Processing transactions...</small>';
+    notificationMessage += '</div>';
+    
+    resultDiv.innerHTML = notificationMessage;
+    
     try {
         const response = await fetch('/api/reconcile', {
             method: 'POST',
@@ -335,32 +356,56 @@ async function runReconciliation() {
         const result = await response.json();
         
         if (response.ok) {
-            let successMessage = `${result.message} ${result.matches_found} matches found.`;
-            if (lenderCompany && borrowerCompany) {
-                successMessage += ` (Filtered for ${lenderCompany} ↔ ${borrowerCompany})`;
-            }
-            if (month && year) {
-                successMessage += ` (Period: ${month} ${year})`;
-            }
-            resultDiv.innerHTML = `<div style="color: green;">${successMessage}</div>`;
+            // Create new reconciliation result entry
+            const timestamp = new Date().toLocaleString();
+            const reconciliationResult = {
+                timestamp: timestamp,
+                companyPair: lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies',
+                statementPeriod: month && year ? `${month} ${year}` : 'All Periods',
+                matchesFound: result.matches_found
+            };
             
-            // Auto-load matches after reconciliation
-            setTimeout(() => {
-                loadMatches();
-            }, 1000);
+            // Add to reconciliation history
+            addReconciliationToHistory(reconciliationResult);
+            
+            // Display all reconciliation history
+            displayReconciliationHistory();
             
         } else {
-            resultDiv.innerHTML = `<div style="color: red;">Reconciliation failed: ${result.error}</div>`;
+            // Create error notification
+            let errorMessage = '<div class="alert alert-danger" role="alert">';
+            errorMessage += '<i class="bi bi-exclamation-triangle me-2"></i>';
+            errorMessage += '<strong>Reconciliation Failed!</strong><br>';
+            errorMessage += `<strong>Company Pair:</strong> ${lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies'}<br>`;
+            errorMessage += `<strong>Statement Period:</strong> ${month && year ? `${month} ${year}` : 'All Periods'}<br>`;
+            errorMessage += `<strong>Error:</strong> ${result.error}`;
+            errorMessage += '</div>';
+            
+            resultDiv.innerHTML = errorMessage;
         }
         
     } catch (error) {
-        resultDiv.innerHTML = `<div style="color: red;">Reconciliation failed: ${error.message}</div>`;
+        // Create error notification for network/technical errors
+        let errorMessage = '<div class="alert alert-danger" role="alert">';
+        errorMessage += '<i class="bi bi-exclamation-triangle me-2"></i>';
+        errorMessage += '<strong>Reconciliation Failed!</strong><br>';
+        errorMessage += `<strong>Company Pair:</strong> ${lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies'}<br>`;
+        errorMessage += `<strong>Statement Period:</strong> ${month && year ? `${month} ${year}` : 'All Periods'}<br>`;
+        errorMessage += `<strong>Error:</strong> ${error.message}`;
+        errorMessage += '</div>';
+        
+        resultDiv.innerHTML = errorMessage;
     }
 }
 
 async function loadMatches() {
     const resultDiv = document.getElementById('reconciliation-result');
-    resultDiv.innerHTML = '<div style="color: blue;">Loading matches...</div>';
+    
+    // Check if there's reconciliation history
+    if (reconciliationHistory.length > 0) {
+        // If there's reconciliation history, don't override it
+        return;
+    }
     
     // Get selected company pair and period
     const companySelect = document.getElementById('matched-company-pair-select');
@@ -385,6 +430,29 @@ async function loadMatches() {
             year = periodParts[1];
         }
     }
+    
+    // Show loading notification with filter details
+    let loadingMessage = '<div class="alert alert-info" role="alert">';
+    loadingMessage += '<i class="bi bi-info-circle me-2"></i>';
+    loadingMessage += '<strong>Loading Matched Results for:</strong><br>';
+    
+    if (lenderCompany && borrowerCompany) {
+        loadingMessage += `<strong>Company Pair:</strong> ${lenderCompany} ↔ ${borrowerCompany}<br>`;
+    } else {
+        loadingMessage += '<strong>Company Pair:</strong> All Companies<br>';
+    }
+    
+    if (month && year) {
+        loadingMessage += `<strong>Statement Period:</strong> ${month} ${year}<br>`;
+    } else {
+        loadingMessage += '<strong>Statement Period:</strong> All Periods<br>';
+    }
+    
+    loadingMessage += '<small class="text-muted">Fetching matched transactions...</small>';
+    loadingMessage += '</div>';
+    
+    resultDiv.innerHTML = loadingMessage;
+    
     // Build query string
     let url = '/api/matches';
     const params = [];
@@ -403,16 +471,33 @@ async function loadMatches() {
         if (response.ok) {
             displayMatches(result.matches);
         } else {
-            resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${result.error}</div>`;
+            // Create error notification
+            let errorMessage = '<div class="alert alert-danger" role="alert">';
+            errorMessage += '<i class="bi bi-exclamation-triangle me-2"></i>';
+            errorMessage += '<strong>Failed to Load Matched Results!</strong><br>';
+            errorMessage += `<strong>Company Pair:</strong> ${lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies'}<br>`;
+            errorMessage += `<strong>Statement Period:</strong> ${month && year ? `${month} ${year}` : 'All Periods'}<br>`;
+            errorMessage += `<strong>Error:</strong> ${result.error}`;
+            errorMessage += '</div>';
+            
+            resultDiv.innerHTML = errorMessage;
         }
     } catch (error) {
-        resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${error.message}</div>`;
+        // Create error notification for network/technical errors
+        let errorMessage = '<div class="alert alert-danger" role="alert">';
+        errorMessage += '<i class="bi bi-exclamation-triangle me-2"></i>';
+        errorMessage += '<strong>Failed to Load Matched Results!</strong><br>';
+        errorMessage += `<strong>Company Pair:</strong> ${lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies'}<br>`;
+        errorMessage += `<strong>Statement Period:</strong> ${month && year ? `${month} ${year}` : 'All Periods'}<br>`;
+        errorMessage += `<strong>Error:</strong> ${error.message}`;
+        errorMessage += '</div>';
+        
+        resultDiv.innerHTML = errorMessage;
     }
 }
 
 async function loadMatchesInViewer() {
     const resultDiv = document.getElementById('matched-results-display');
-    resultDiv.innerHTML = '<div style="color: blue;">Loading matches...</div>';
     
     // Get selected company pair and period
     const companySelect = document.getElementById('matched-company-pair-select');
@@ -439,6 +524,28 @@ async function loadMatchesInViewer() {
         }
     }
     
+    // Show loading notification with filter details
+    let loadingMessage = '<div class="alert alert-info" role="alert">';
+    loadingMessage += '<i class="bi bi-info-circle me-2"></i>';
+    loadingMessage += '<strong>Loading Matched Results for:</strong><br>';
+    
+    if (lenderCompany && borrowerCompany) {
+        loadingMessage += `<strong>Company Pair:</strong> ${lenderCompany} ↔ ${borrowerCompany}<br>`;
+    } else {
+        loadingMessage += '<strong>Company Pair:</strong> All Companies<br>';
+    }
+    
+    if (month && year) {
+        loadingMessage += `<strong>Statement Period:</strong> ${month} ${year}<br>`;
+    } else {
+        loadingMessage += '<strong>Statement Period:</strong> All Periods<br>';
+    }
+    
+    loadingMessage += '<small class="text-muted">Fetching matched transactions...</small>';
+    loadingMessage += '</div>';
+    
+    resultDiv.innerHTML = loadingMessage;
+    
     // Build query string
     let url = '/api/matches';
     const params = [];
@@ -459,11 +566,29 @@ async function loadMatchesInViewer() {
         if (response.ok) {
             displayMatches(result.matches, 'matched-results-display');
         } else {
-            resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${result.error}</div>`;
+            // Create error notification
+            let errorMessage = '<div class="alert alert-danger" role="alert">';
+            errorMessage += '<i class="bi bi-exclamation-triangle me-2"></i>';
+            errorMessage += '<strong>Failed to Load Matched Results!</strong><br>';
+            errorMessage += `<strong>Company Pair:</strong> ${lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies'}<br>`;
+            errorMessage += `<strong>Statement Period:</strong> ${month && year ? `${month} ${year}` : 'All Periods'}<br>`;
+            errorMessage += `<strong>Error:</strong> ${result.error}`;
+            errorMessage += '</div>';
+            
+            resultDiv.innerHTML = errorMessage;
         }
         
     } catch (error) {
-        resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${error.message}</div>`;
+        // Create error notification for network/technical errors
+        let errorMessage = '<div class="alert alert-danger" role="alert">';
+        errorMessage += '<i class="bi bi-exclamation-triangle me-2"></i>';
+        errorMessage += '<strong>Failed to Load Matched Results!</strong><br>';
+        errorMessage += `<strong>Company Pair:</strong> ${lenderCompany && borrowerCompany ? `${lenderCompany} ↔ ${borrowerCompany}` : 'All Companies'}<br>`;
+        errorMessage += `<strong>Statement Period:</strong> ${month && year ? `${month} ${year}` : 'All Periods'}<br>`;
+        errorMessage += `<strong>Error:</strong> ${error.message}`;
+        errorMessage += '</div>';
+        
+        resultDiv.innerHTML = errorMessage;
     }
 }
 
@@ -1765,4 +1890,82 @@ function checkUnmatchedButtonState() {
             downloadButton.classList.add('btn-secondary');
         }
     }
+}
+
+// Global variable to store reconciliation history
+let reconciliationHistory = [];
+
+// Function to add reconciliation result to history
+function addReconciliationToHistory(result) {
+    reconciliationHistory.push(result);
+    // Keep only the last 20 reconciliations to prevent the list from getting too long
+    if (reconciliationHistory.length > 20) {
+        reconciliationHistory = reconciliationHistory.slice(-20);
+    }
+}
+
+// Function to display all reconciliation history
+function displayReconciliationHistory() {
+    const resultDiv = document.getElementById('reconciliation-result');
+    if (!resultDiv) return;
+    
+    if (reconciliationHistory.length === 0) {
+        resultDiv.innerHTML = '';
+        return;
+    }
+    
+    let historyHTML = '<div class="reconciliation-history">';
+    historyHTML += '<h6 class="mb-3"><i class="bi bi-clock-history me-2"></i>Reconciliation History</h6>';
+    
+    // Display reconciliations in reverse chronological order (newest first)
+    reconciliationHistory.slice().reverse().forEach((result, index) => {
+        historyHTML += '<div class="alert alert-success mb-2" role="alert">';
+        historyHTML += '<div class="d-flex justify-content-between align-items-start">';
+        historyHTML += '<div class="flex-grow-1">';
+        historyHTML += '<div class="d-flex align-items-center mb-1">';
+        historyHTML += '<i class="bi bi-check-circle me-2"></i>';
+        historyHTML += '<strong>Reconciliation Completed</strong>';
+        historyHTML += '<small class="text-muted ms-2">' + result.timestamp + '</small>';
+        historyHTML += '</div>';
+        historyHTML += '<div class="row">';
+        historyHTML += '<div class="col-md-4"><strong>Company Pair:</strong> ' + result.companyPair + '</div>';
+        historyHTML += '<div class="col-md-4"><strong>Statement Period:</strong> ' + result.statementPeriod + '</div>';
+        historyHTML += '<div class="col-md-4"><strong>Matches Found:</strong> ' + result.matchesFound + ' transactions</div>';
+        historyHTML += '</div>';
+        historyHTML += '</div>';
+        historyHTML += '<div class="ms-3">';
+        historyHTML += '<button type="button" class="btn btn-sm btn-outline-success me-2" onclick="showTab(\'matched-results\')">View Results</button>';
+        historyHTML += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeReconciliationFromHistory(' + (reconciliationHistory.length - 1 - index) + ')">Remove</button>';
+        historyHTML += '</div>';
+        historyHTML += '</div>';
+        historyHTML += '</div>';
+    });
+    
+    historyHTML += '<div class="mt-3">';
+    historyHTML += '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAllReconciliationHistory()">';
+    historyHTML += '<i class="bi bi-trash me-1"></i>Clear All History';
+    historyHTML += '</button>';
+    historyHTML += '</div>';
+    historyHTML += '</div>';
+    
+    resultDiv.innerHTML = historyHTML;
+}
+
+// Function to remove a specific reconciliation from history
+function removeReconciliationFromHistory(index) {
+    if (index >= 0 && index < reconciliationHistory.length) {
+        reconciliationHistory.splice(index, 1);
+        displayReconciliationHistory();
+    }
+}
+
+// Function to clear all reconciliation history
+function clearAllReconciliationHistory() {
+    reconciliationHistory = [];
+    displayReconciliationHistory();
+}
+
+// Function to clear the reconciliation notification (legacy function for backward compatibility)
+function clearReconciliationNotification() {
+    clearAllReconciliationHistory();
 }
