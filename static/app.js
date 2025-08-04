@@ -920,11 +920,11 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 </td>
                 <td data-column="actions">
                     <div class="btn-group" role="group" aria-label="Match actions">
-                        <button class="btn btn-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
-                            ✓
+                        <button class="btn btn-outline-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
+                            ✔
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
-                            ✗
+                        <button class="btn btn-outline-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
+                            ✖
                         </button>
                     </div>
                 </td>
