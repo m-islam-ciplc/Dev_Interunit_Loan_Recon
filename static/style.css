@@ -278,6 +278,21 @@ h6 {
     margin-bottom: 18px;
 }
 
+/* Dynamic table heading rows */
+.matched-header {
+    background-color: #d4edda;
+    padding: 8px 8px;
+    border-bottom: 1px solid #e1e6ef;
+    border-radius: 8px 8px 0 0;
+}
+
+.unmatched-header {
+    background-color: #ffe6cc;
+    padding: 8px 8px;
+    border-bottom: 1px solid #e1e6ef;
+    border-radius: 8px 8px 0 0;
+}
+
 .matched-transactions-table,
 .unmatched-transactions-table {
     width: 100%;
@@ -336,9 +351,9 @@ h6 {
     background-color: #F8F9FA;
     font-weight: bold;
     font-size: 11px;
-    white-space: normal !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
     line-height: 1.2 !important;
 }
 
