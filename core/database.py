@@ -406,6 +406,10 @@ def find_matches(data):
 def update_matches(matches):
     """Update database with matched records using the hybrid matching system.
     
+    Auto-acceptance logic:
+    - PO and LC matches are automatically confirmed (high confidence)
+    - LOAN_ID, SALARY, and COMMON_TEXT matches require manual review
+    
     Stores match information in three columns:
     1. match_method: 'exact' or 'jaccard'
     2. keywords: (deprecated) Simple match text
@@ -423,7 +427,10 @@ def update_matches(matches):
     
     with engine.connect() as conn:
         for match in matches:
-            # Prepare match information
+            # Prepare match information and determine auto-acceptance
+            # PO and LC matches are auto-accepted due to high confidence
+            auto_accept = match['match_type'] in ['PO', 'LC']
+            
             if match['match_type'] == 'PO':
                 keywords = match['po']
                 match_method = 'exact'
@@ -471,17 +478,22 @@ def update_matches(matches):
             # Convert to JSON string
             audit_json = json.dumps(audit_info)
             
+            # Determine match status: auto-accept PO and LC matches
+            match_status = 'confirmed' if auto_accept else 'matched'
+            
             # Update the borrower (Credit) record - point to lender
             conn.execute(text("""
                 UPDATE tally_data 
                 SET matched_with = :matched_with, 
-                    match_status = 'matched', 
+                    match_status = :match_status, 
                     keywords = :keywords,
                     match_method = :match_method,
-                    audit_info = :audit_info
+                    audit_info = :audit_info,
+                    date_matched = NOW()
                 WHERE uid = :borrower_uid
             """), {
                 'matched_with': match['lender_uid'],
+                'match_status': match_status,
                 'keywords': keywords,
                 'match_method': match_method,
                 'audit_info': audit_json,
@@ -492,13 +504,15 @@ def update_matches(matches):
             conn.execute(text("""
                 UPDATE tally_data 
                 SET matched_with = :matched_with, 
-                    match_status = 'matched', 
+                    match_status = :match_status, 
                     keywords = :keywords,
                     match_method = :match_method,
-                    audit_info = :audit_info
+                    audit_info = :audit_info,
+                    date_matched = NOW()
                 WHERE uid = :lender_uid
             """), {
                 'matched_with': match['borrower_uid'],
+                'match_status': match_status,
                 'keywords': keywords,
                 'match_method': match_method,
                 'audit_info': audit_json,

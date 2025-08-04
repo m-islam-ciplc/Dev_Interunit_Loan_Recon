@@ -919,14 +919,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                     <div class="audit-info-text">${(formatAuditInfo(match.audit_info) || '').replace(/\n/g, '<br>')}</div>
                 </td>
                 <td data-column="actions">
-                    <div class="btn-group" role="group" aria-label="Match actions">
-                        <button class="btn btn-outline-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
-                            ✔
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
-                            ✖
-                        </button>
-                    </div>
+                    ${generateActionButtons(match)}
                 </td>
             </tr>
         `;
@@ -940,6 +933,46 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
     `;
     
     resultDiv.innerHTML = tableHTML;
+}
+
+// Generate action buttons based on match type and status
+function generateActionButtons(match) {
+    // Parse audit info to get match type
+    let matchType = '';
+    try {
+        if (match.audit_info) {
+            const auditInfo = JSON.parse(match.audit_info);
+            matchType = auditInfo.match_type || '';
+        }
+    } catch (e) {
+        console.warn('Could not parse audit_info:', match.audit_info);
+    }
+    
+    // Check if this match is auto-accepted (PO or LC)
+    const isAutoAccepted = ['PO', 'LC'].includes(matchType);
+    
+    // If auto-accepted, show a badge instead of action buttons
+    if (isAutoAccepted) {
+        return `
+            <div class="d-flex justify-content-center align-items-center">
+                <span class="badge bg-success text-white px-3 py-2" style="font-size: 10px;">
+                    <i class="bi bi-check-circle me-1"></i>Auto-Confirmed
+                </span>
+            </div>
+        `;
+    }
+    
+    // For other match types, show the action buttons
+    return `
+        <div class="btn-group" role="group" aria-label="Match actions">
+            <button class="btn btn-outline-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
+                ✔
+            </button>
+            <button class="btn btn-outline-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
+                ✖
+            </button>
+        </div>
+    `;
 }
 
 // Accept/Reject functions
