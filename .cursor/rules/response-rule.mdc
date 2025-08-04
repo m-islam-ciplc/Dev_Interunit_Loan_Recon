@@ -1,0 +1,4 @@
+---
+description: Refactor code into clear, single-purpose Python modules. Keep related functions/classes together and use descriptive names. Extract shared code into common modules. Avoid mixing unrelated logic in the same file..
+alwaysApply: false
+---

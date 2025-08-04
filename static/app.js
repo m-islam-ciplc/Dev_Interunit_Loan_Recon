@@ -1,0 +1,1768 @@
+// Interunit Loan Reconciliation - JavaScript
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+    if (document.getElementById('recent-uploads-list')) {
+        loadRecentUploads();
+    }
+});
+
+// Tab switching function
+function showTab(tabName) {
+    // Hide all tab panes
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    tabPanes.forEach(pane => {
+        pane.style.display = 'none';
+    });
+    
+    // Show selected tab pane
+    const selectedPane = document.getElementById('pane-' + tabName);
+    if (selectedPane) {
+        selectedPane.style.display = 'block';
+        
+        // If switching to data-table tab, load data
+        if (tabName === 'data-table') {
+            loadData();
+        }
+        
+        // If switching to reconciliation tab, load company pairs
+        if (tabName === 'reconciliation') {
+            loadReconciliationCompanyPairs();
+        }
+        
+        // If switching to matched-results tab, load company pairs
+        if (tabName === 'matched-results') {
+            loadMatchedCompanyPairs();
+        }
+        
+        // If switching to unmatched-results tab, load company pairs
+        if (tabName === 'unmatched-results') {
+            loadUnmatchedCompanyPairs();
+        }
+    }
+}
+
+// Handle file selection with SheetJS
+function handleFileSelect(input, fileNumber) {
+    const file = input.files[0];
+    const fileChosenSpan = document.getElementById(`file-chosen-${fileNumber}`);
+    const sheetRow = document.getElementById(`sheet-row-${fileNumber}`);
+    const sheetSelect = sheetRow.querySelector('.sheet-select');
+    const parseBtn = document.getElementById('parse-btn');
+    
+    if (file) {
+        // Update file name display
+        fileChosenSpan.textContent = file.name;
+        
+        // Read Excel file with SheetJS
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Clear existing options
+                sheetSelect.innerHTML = '';
+                
+                // Add sheet names to dropdown
+                workbook.SheetNames.forEach(sheetName => {
+                    const option = document.createElement('option');
+                    option.value = sheetName;
+                    option.textContent = sheetName;
+                    sheetSelect.appendChild(option);
+                });
+                
+                // Show sheet selection row
+                sheetRow.style.display = 'flex';
+                
+                // Enable parse button if both files are selected
+                checkBothFilesSelected();
+                
+            } catch (error) {
+                console.error('Error reading Excel file:', error);
+                fileChosenSpan.textContent = 'Error reading file';
+                parseBtn.disabled = true;
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        fileChosenSpan.textContent = 'No file chosen';
+        sheetRow.style.display = 'none';
+        parseBtn.disabled = true;
+    }
+}
+
+function checkBothFilesSelected() {
+    const file1 = document.querySelector('input[name="file1"]').files[0];
+    const file2 = document.querySelector('input[name="file2"]').files[0];
+    const sheet1 = document.getElementById('sheet-select-1').value;
+    const sheet2 = document.getElementById('sheet-select-2').value;
+    
+    const parseBtn = document.getElementById('parse-btn');
+    const uploadMsg = document.getElementById('upload-msg');
+    
+    // Check if both files are selected
+    if (file1 && file2) {
+        // Check if same file is selected
+        if (file1.name === file2.name) {
+            uploadMsg.textContent = 'Warning: Same file selected for both companies. Please select different files.';
+            uploadMsg.style.color = 'orange';
+            parseBtn.disabled = true;
+            return;
+        } else {
+            uploadMsg.textContent = '';
+            uploadMsg.style.color = 'red';
+        }
+    }
+    
+    parseBtn.disabled = !(file1 && file2 && sheet1 && sheet2);
+}
+
+// Handle form submission
+document.getElementById('tally-upload-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    uploadFile();
+});
+
+// Upload file function
+async function uploadFile() {
+    const formData = new FormData();
+    const fileInput1 = document.querySelector('input[name="file1"]');
+    const fileInput2 = document.querySelector('input[name="file2"]');
+    const sheetSelect1 = document.getElementById('sheet-select-1');
+    const sheetSelect2 = document.getElementById('sheet-select-2');
+    const parseBtn = document.getElementById('parse-btn');
+    const uploadMsg = document.getElementById('upload-msg');
+    const uploadResult = document.getElementById('upload-result');
+    
+    if (!fileInput1.files[0] || !fileInput2.files[0]) {
+        uploadMsg.textContent = 'Please select both files to upload.';
+        return;
+    }
+    
+    if (!sheetSelect1.value || !sheetSelect2.value) {
+        uploadMsg.textContent = 'Please select sheets for both files.';
+        return;
+    }
+    
+    formData.append('file1', fileInput1.files[0]);
+    formData.append('file2', fileInput2.files[0]);
+    formData.append('sheet_name1', sheetSelect1.value);
+    formData.append('sheet_name2', sheetSelect2.value);
+    
+    // Show loading
+    parseBtn.disabled = true;
+    parseBtn.textContent = 'Processing...';
+    uploadMsg.textContent = '';
+    uploadResult.innerHTML = '<div style="color: blue;">Uploading file pair...</div>';
+    
+    try {
+        const response = await fetch('/api/upload-pair', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            uploadResult.innerHTML = `<div style="color: green;">File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
+            
+            // Reset form
+            fileInput1.value = '';
+            fileInput2.value = '';
+            document.getElementById('file-chosen-1').textContent = 'No file chosen';
+            document.getElementById('file-chosen-2').textContent = 'No file chosen';
+            document.getElementById('sheet-row-1').style.display = 'none';
+            document.getElementById('sheet-row-2').style.display = 'none';
+            parseBtn.disabled = true;
+            
+            // Reload data
+            loadData();
+            loadRecentUploads();
+            
+            // Clear success message after 8 seconds (longer to show pair ID)
+            setTimeout(() => {
+                uploadResult.innerHTML = '';
+            }, 8000);
+            
+        } else {
+            uploadResult.innerHTML = `<div style="color: red;">Upload failed: ${result.error}</div>`;
+        }
+        
+    } catch (error) {
+        uploadResult.innerHTML = `<div style="color: red;">Upload failed: ${error.message}</div>`;
+    } finally {
+        parseBtn.disabled = false;
+        parseBtn.textContent = 'Upload Pair';
+    }
+}
+
+// Load data from API
+async function loadData() {
+    try {
+        const response = await fetch('/api/data');
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayData(result.data, result.column_order);
+        } else {
+            console.error('Error loading data:', result.error);
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+    }
+}
+
+// Display data in table
+function displayData(data, columnOrder) {
+    const resultDiv = document.getElementById('data-table-result');
+    
+    if (!data || data.length === 0) {
+        resultDiv.innerHTML = `
+            <div style="text-align: center; color: #666; padding: 20px;">
+                No data available. Upload a file to get started.
+            </div>
+        `;
+        return;
+    }
+    
+    // Use the column order from backend, fallback to Object.keys if not provided
+    const columns = columnOrder || Object.keys(data[0]);
+    
+    // Debug: Print the column order received by frontend
+    console.log("Frontend received columns:", columns);
+    
+    let tableHTML = `
+        <div class="report-table-wrapper" style="max-height: 70vh; overflow-y: auto;">
+            <table class="report-table" style="border-collapse: collapse;">
+                <thead style="position: sticky; top: 0; background-color: #f8f9fa; z-index: 1;">
+                    <tr>
+                        ${columns.map(col => `<th style="border: 1px solid #dee2e6; padding: 8px; text-align: left; background-color: #f8f9fa;">${col}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    data.forEach(row => {
+        tableHTML += `
+            <tr>
+                ${columns.map(col => {
+                    let value = row[col];
+                    if (value === null || value === undefined) {
+                        value = '';
+                    } else {
+                        // Format date columns to YYYY-MM-DD
+                        if (col.toLowerCase().includes('date') || col === 'Date') {
+                            value = formatDate(value);
+                        }
+                    }
+                    return `<td style="border: 1px solid #dee2e6; padding: 8px;">${value}</td>`;
+                }).join('')}
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: 10px; color: #666;">
+            Total records: ${data.length}
+        </div>
+    `;
+    
+    resultDiv.innerHTML = tableHTML;
+}
+
+// Helper function to get badge class for match status
+function getStatusBadgeClass(status) {
+    switch(status) {
+        case 'confirmed':
+            return 'bg-success';
+        case 'matched':
+            return 'bg-warning';
+        case 'unmatched':
+        default:
+            return 'bg-secondary';
+    }
+}
+
+// Update reconciliation function to use company pairs
+async function runReconciliation() {
+    const resultDiv = document.getElementById('reconciliation-result');
+    resultDiv.innerHTML = '<div style="color: blue;">Running reconciliation...</div>';
+    
+    // Get selected company pair and period
+    const companySelect = document.getElementById('reconciliation-company-pair-select');
+    const periodSelect = document.getElementById('reconciliation-period-select');
+    const companyPair = companySelect ? companySelect.value : '';
+    const period = periodSelect ? periodSelect.value : '';
+    
+    let lenderCompany = '';
+    let borrowerCompany = '';
+    let month = '';
+    let year = '';
+    
+    if (companyPair && companyPair.includes('↔')) {
+        const parts = companyPair.split('↔').map(s => s.trim());
+        lenderCompany = parts[0];
+        borrowerCompany = parts[1];
+    }
+    
+    if (period && period !== '-- Select Statement Period --') {
+        const periodParts = period.split(' ');
+        if (periodParts.length === 2) {
+            month = periodParts[0];
+            year = periodParts[1];
+        }
+    }
+    
+    try {
+        const response = await fetch('/api/reconcile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                lender_company: lenderCompany,
+                borrower_company: borrowerCompany,
+                month: month,
+                year: year
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            let successMessage = `${result.message} ${result.matches_found} matches found.`;
+            if (lenderCompany && borrowerCompany) {
+                successMessage += ` (Filtered for ${lenderCompany} ↔ ${borrowerCompany})`;
+            }
+            if (month && year) {
+                successMessage += ` (Period: ${month} ${year})`;
+            }
+            resultDiv.innerHTML = `<div style="color: green;">${successMessage}</div>`;
+            
+            // Auto-load matches after reconciliation
+            setTimeout(() => {
+                loadMatches();
+            }, 1000);
+            
+        } else {
+            resultDiv.innerHTML = `<div style="color: red;">Reconciliation failed: ${result.error}</div>`;
+        }
+        
+    } catch (error) {
+        resultDiv.innerHTML = `<div style="color: red;">Reconciliation failed: ${error.message}</div>`;
+    }
+}
+
+async function loadMatches() {
+    const resultDiv = document.getElementById('reconciliation-result');
+    resultDiv.innerHTML = '<div style="color: blue;">Loading matches...</div>';
+    
+    // Get selected company pair and period
+    const companySelect = document.getElementById('matched-company-pair-select');
+    const periodSelect = document.getElementById('matched-period-select');
+    const companyPair = companySelect ? companySelect.value : '';
+    const period = periodSelect ? periodSelect.value : '';
+    let lenderCompany = '';
+    let borrowerCompany = '';
+    let month = '';
+    let year = '';
+    if (companyPair && companyPair.includes('↔')) {
+        // Format: "Company1 ↔ Company2"
+        const parts = companyPair.split('↔').map(s => s.trim());
+        lenderCompany = parts[0];
+        borrowerCompany = parts[1];
+    }
+    if (period && period !== '-- All Periods --') {
+        // Format: "Month Year"
+        const periodParts = period.split(' ');
+        if (periodParts.length === 2) {
+            month = periodParts[0];
+            year = periodParts[1];
+        }
+    }
+    // Build query string
+    let url = '/api/matches';
+    const params = [];
+    if (lenderCompany && borrowerCompany) {
+        params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+        params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+    }
+    if (month) params.push(`month=${encodeURIComponent(month)}`);
+    if (year) params.push(`year=${encodeURIComponent(year)}`);
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        if (response.ok) {
+            displayMatches(result.matches);
+        } else {
+            resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${result.error}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${error.message}</div>`;
+    }
+}
+
+async function loadMatchesInViewer() {
+    const resultDiv = document.getElementById('matched-results-display');
+    resultDiv.innerHTML = '<div style="color: blue;">Loading matches...</div>';
+    
+    // Get selected company pair and period
+    const companySelect = document.getElementById('matched-company-pair-select');
+    const periodSelect = document.getElementById('matched-period-select');
+    const companyPair = companySelect ? companySelect.value : '';
+    const period = periodSelect ? periodSelect.value : '';
+    
+    let lenderCompany = '';
+    let borrowerCompany = '';
+    let month = '';
+    let year = '';
+    
+    if (companyPair && companyPair.includes('↔')) {
+        const parts = companyPair.split('↔').map(s => s.trim());
+        lenderCompany = parts[0];
+        borrowerCompany = parts[1];
+    }
+    
+    if (period && period !== '-- All Periods --') {
+        const periodParts = period.split(' ');
+        if (periodParts.length === 2) {
+            month = periodParts[0];
+            year = periodParts[1];
+        }
+    }
+    
+    // Build query string
+    let url = '/api/matches';
+    const params = [];
+    if (lenderCompany && borrowerCompany) {
+        params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+        params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+    }
+    if (month) params.push(`month=${encodeURIComponent(month)}`);
+    if (year) params.push(`year=${encodeURIComponent(year)}`);
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayMatches(result.matches, 'matched-results-display');
+        } else {
+            resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${result.error}</div>`;
+        }
+        
+    } catch (error) {
+        resultDiv.innerHTML = `<div style="color: red;">Failed to load matches: ${error.message}</div>`;
+    }
+}
+
+async function downloadMatches() {
+    try {
+        // Get selected company pair and period
+        const companySelect = document.getElementById('matched-company-pair-select');
+        const periodSelect = document.getElementById('matched-period-select');
+        const companyPair = companySelect ? companySelect.value : '';
+        const period = periodSelect ? periodSelect.value : '';
+        
+        let lenderCompany = '';
+        let borrowerCompany = '';
+        let month = '';
+        let year = '';
+        
+        if (companyPair && companyPair.includes('↔')) {
+            const parts = companyPair.split('↔').map(s => s.trim());
+            lenderCompany = parts[0];
+            borrowerCompany = parts[1];
+        }
+        
+        if (period && period !== '-- All Periods --') {
+            const periodParts = period.split(' ');
+            if (periodParts.length === 2) {
+                month = periodParts[0];
+                year = periodParts[1];
+            }
+        }
+        
+        // Build query string
+        let url = '/api/download-matches';
+        const params = [];
+        if (lenderCompany && borrowerCompany) {
+            params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+            params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+        }
+        if (month) params.push(`month=${encodeURIComponent(month)}`);
+        if (year) params.push(`year=${encodeURIComponent(year)}`);
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        
+        const response = await fetch(url);
+        
+        if (response.ok) {
+            // Get the filename from the response headers
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'matched_transactions.xlsx';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            
+            // Create blob and download
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } else {
+            const result = await response.json();
+            alert(`Failed to download: ${result.error}`);
+        }
+    } catch (error) {
+        alert(`Failed to download: ${error.message}`);
+    }
+}
+
+function formatAuditInfo(auditInfoStr) {
+    if (!auditInfoStr) return '';
+    try {
+        const auditInfo = JSON.parse(auditInfoStr);
+        let formattedInfo = '';
+        
+        // Format match type and details based on type
+        switch(auditInfo.match_type) {
+            case 'PO':
+                formattedInfo += `PO Match\nPO Number: ${auditInfo.keywords}\n`;
+                break;
+            case 'LC':
+                formattedInfo += `LC Match\nLC Number: ${auditInfo.keywords}\n`;
+                break;
+            case 'LOAN_ID':
+                formattedInfo += `Loan ID Match\nLoan ID: ${auditInfo.keywords}\n`;
+                break;
+            case 'SALARY':
+                formattedInfo += `Salary Match\nDetails: ${auditInfo.keywords}\n`;
+                if (auditInfo.jaccard_score !== undefined) {
+                    formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
+                }
+                break;
+            case 'COMMON_TEXT':
+                // Get the actual matched text from any field that might have it
+                const matchedText = auditInfo.keywords || auditInfo.common_text || auditInfo.matched_text || auditInfo.matched_phrase || '';
+                if (matchedText) {
+                    formattedInfo += `MATCHED TEXT: "${matchedText}"\n`;
+                    formattedInfo += `(Common Text Match)\n`;
+                } else {
+                    formattedInfo += 'Common Text Match (no text found)\n';
+                }
+                if (auditInfo.jaccard_score !== undefined) {
+                    formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
+                }
+                break;
+            default:
+                formattedInfo += `Type: ${auditInfo.match_type}\nKeywords: ${auditInfo.keywords}\n`;
+        }
+        
+        return formattedInfo.trim();
+    } catch (e) {
+        console.error('Error parsing audit info:', e);
+        return auditInfoStr;
+    }
+}
+
+function displayMatches(matches, targetDivId = 'reconciliation-result') {
+    const resultDiv = document.getElementById(targetDivId);
+    
+    if (!matches || matches.length === 0) {
+        // Check if we're in the matched results display
+        if (targetDivId === 'matched-results-display') {
+            resultDiv.innerHTML = `
+                <div style="text-align: center; color: #666; padding: 20px;">
+                    No matches found for the selected company pair and period. 
+                    <br>Try selecting different options or run reconciliation first.
+                </div>
+            `;
+        } else {
+        resultDiv.innerHTML = `
+            <div style="text-align: center; color: #666; padding: 20px;">
+                No matches found. Run reconciliation to find matching transactions.
+            </div>
+        `;
+        }
+        return;
+    }
+    
+    // Get dynamic lender/borrower names from the first match (same logic as Excel export)
+    let lender_name = 'Lender';
+    let borrower_name = 'Borrower';
+    if (matches.length > 0) {
+        const first_match = matches[0];
+        // Determine which is lender (Debit side) vs borrower (Credit side)
+        if (first_match.Debit && first_match.Debit > 0) {
+            // Main record is lender (Debit side)
+            lender_name = first_match.lender || 'Lender';
+            borrower_name = first_match.matched_lender || 'Borrower';
+        } else if (first_match.matched_Debit && first_match.matched_Debit > 0) {
+            // Matched record is lender (Debit side)
+            lender_name = first_match.matched_lender || 'Lender';
+            borrower_name = first_match.lender || 'Borrower';
+        } else {
+            // Fallback to original logic
+            if (first_match.lender) {
+                lender_name = first_match.lender;
+            }
+            if (first_match.matched_lender && first_match.matched_lender !== first_match.lender) {
+                borrower_name = first_match.matched_lender;
+            } else if (first_match.borrower) {
+                borrower_name = first_match.borrower;
+            }
+        }
+    }
+    
+    let tableHTML = `
+        <div class="matched-transactions-wrapper">
+            <div class="matched-header">
+                <h4><i class="bi bi-link-45deg"></i> Matched Transactions (${matches.length} pairs)</h4>
+            </div>
+            <div class="table-responsive">
+                <table class="matched-transactions-table">
+                <thead>
+                    <tr>
+                            <!-- Lender Columns -->
+                            <th data-column="lender_uid">Lender UID</th>
+                            <th data-column="lender_date">Lender Date</th>
+                            <th data-column="lender_particulars">Lender Particulars</th>
+                            <th data-column="lender_debit">Lender Debit</th>
+                            <th data-column="lender_vch_type">Lender Vch Type</th>
+                            <th data-column="lender_role">Lender Role</th>
+                            <!-- Borrower Columns -->
+                            <th data-column="borrower_uid">Borrower UID</th>
+                            <th data-column="borrower_date">Borrower Date</th>
+                            <th data-column="borrower_particulars">Borrower Particulars</th>
+                            <th data-column="borrower_credit">Borrower Credit</th>
+                            <th data-column="borrower_vch_type">Borrower Vch Type</th>
+                            <th data-column="borrower_role">Borrower Role</th>
+                            <!-- Match Details Columns -->
+                            <th data-column="confidence">Confidence</th>
+                            <th data-column="audit_info">Audit Info</th>
+                            <th data-column="actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    matches.forEach(match => {
+        // Determine which record is lender and which is borrower based on Debit/Credit values
+        let lenderRecord, borrowerRecord, lenderUid, borrowerUid, lenderRole, borrowerRole;
+        
+        // Check which record has Debit > 0 (Lender) vs Credit > 0 (Borrower)
+        const main_record_debit = parseFloat(match.Debit || 0);
+        const main_record_credit = parseFloat(match.Credit || 0);
+        const matched_record_debit = parseFloat(match.matched_Debit || 0);
+        const matched_record_credit = parseFloat(match.matched_Credit || 0);
+        
+        if (main_record_debit > 0) {
+            // Main record is Lender (Debit > 0)
+            lenderRecord = {
+                Date: match.Date,
+                Particulars: match.Particulars,
+                Credit: match.Credit,
+                Debit: match.Debit,
+                Vch_Type: match.Vch_Type
+            };
+            lenderUid = match.uid;
+            lenderRole = 'Lender'; // Correct - Debit > 0 = Lender
+            
+            borrowerRecord = {
+                Date: match.matched_date,
+                Particulars: match.matched_particulars,
+                Credit: match.matched_Credit,
+                Debit: match.matched_Debit,
+                Vch_Type: match.matched_Vch_Type
+            };
+            borrowerUid = match.matched_uid;
+            borrowerRole = 'Borrower'; // Correct - Credit > 0 = Borrower
+        } else if (matched_record_debit > 0) {
+            // Matched record is Lender (Debit > 0)
+            lenderRecord = {
+                Date: match.matched_date,
+                Particulars: match.matched_particulars,
+                Credit: match.matched_Credit,
+                Debit: match.matched_Debit,
+                Vch_Type: match.matched_Vch_Type
+            };
+            lenderUid = match.matched_uid;
+            lenderRole = 'Lender'; // Correct - Debit > 0 = Lender
+            
+            borrowerRecord = {
+                Date: match.Date,
+                Particulars: match.Particulars,
+                Credit: match.Credit,
+                Debit: match.Debit,
+                Vch_Type: match.Vch_Type
+            };
+            borrowerUid = match.uid;
+            borrowerRole = 'Borrower'; // Correct - Credit > 0 = Borrower
+        } else {
+            // Fallback: use the original logic based on lender_name
+            if (match.lender === lender_name) {
+                lenderRecord = {
+                    Date: match.Date,
+                    Particulars: match.Particulars,
+                    Credit: match.Credit,
+                    Debit: match.Debit,
+                    Vch_Type: match.Vch_Type
+                };
+                lenderUid = match.uid;
+                // Determine role based on Debit/Credit
+                lenderRole = (parseFloat(match.Debit || 0) > 0) ? 'Lender' : 'Borrower';
+                
+                borrowerRecord = {
+                    Date: match.matched_date,
+                    Particulars: match.matched_particulars,
+                    Credit: match.matched_Credit,
+                    Debit: match.matched_Debit,
+                    Vch_Type: match.matched_Vch_Type
+                };
+                borrowerUid = match.matched_uid;
+                // Determine role based on Debit/Credit
+                borrowerRole = (parseFloat(match.matched_Debit || 0) > 0) ? 'Lender' : 'Borrower';
+            } else {
+                borrowerRecord = {
+                    Date: match.Date,
+                    Particulars: match.Particulars,
+                    Credit: match.Credit,
+                    Debit: match.Debit,
+                    Vch_Type: match.Vch_Type
+                };
+                borrowerUid = match.uid;
+                // Determine role based on Debit/Credit
+                borrowerRole = (parseFloat(match.Debit || 0) > 0) ? 'Lender' : 'Borrower';
+                
+                lenderRecord = {
+                    Date: match.matched_date,
+                    Particulars: match.matched_particulars,
+                    Credit: match.matched_Credit,
+                    Debit: match.matched_Debit,
+                    Vch_Type: match.matched_Vch_Type
+                };
+                lenderUid = match.matched_uid;
+                // Determine role based on Debit/Credit
+                lenderRole = (parseFloat(match.matched_Debit || 0) > 0) ? 'Lender' : 'Borrower';
+            }
+        }
+        
+        // Calculate the matched amount
+        const matchedAmount = Math.max(
+            parseFloat(lenderRecord.Debit || 0),
+            parseFloat(lenderRecord.Credit || 0),
+            parseFloat(borrowerRecord.Debit || 0),
+            parseFloat(borrowerRecord.Credit || 0)
+        );
+        
+        tableHTML += `
+            <tr class="match-row">
+                <!-- Lender Columns -->
+                <td data-column="lender_uid" class="uid-cell">${lenderUid || ''}</td>
+                <td data-column="lender_date">${formatDate(lenderRecord.Date)}</td>
+                <td data-column="lender_particulars" class="particulars-cell table-cell-large">${lenderRecord.Particulars || ''}</td>
+                <td data-column="lender_debit" class="amount-cell debit-amount">${formatAmount(lenderRecord.Debit || 0)}</td>
+                <td data-column="lender_vch_type">${lenderRecord.Vch_Type || ''}</td>
+                <td data-column="lender_role"><span class="role-badge lender-role">${lenderRole}</span></td>
+                <!-- Borrower Columns -->
+                <td data-column="borrower_uid" class="uid-cell">${borrowerUid || ''}</td>
+                <td data-column="borrower_date">${formatDate(borrowerRecord.Date)}</td>
+                <td data-column="borrower_particulars" class="particulars-cell table-cell-large">${borrowerRecord.Particulars || ''}</td>
+                <td data-column="borrower_credit" class="amount-cell credit-amount">${formatAmount(borrowerRecord.Credit || 0)}</td>
+                <td data-column="borrower_vch_type">${borrowerRecord.Vch_Type || ''}</td>
+                <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
+                <!-- Match Details Columns -->
+                <td data-column="confidence">
+                    <div class="confidence-indicator">
+                        <span class="confidence-badge medium">
+                        N/A
+                    </span>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill medium" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </td>
+                <td data-column="audit_info">
+                    <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 12px;">
+                        ${formatAuditInfo(match.audit_info) || ''}
+                    </pre>
+                </td>
+                <td data-column="actions">
+                    <div class="action-buttons">
+                        <button class="btn btn-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
+                            ✓
+                    </button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
+                            ✗
+                    </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+            </div>
+        </div>
+    `;
+    
+    resultDiv.innerHTML = tableHTML;
+}
+
+// Accept/Reject functions
+async function acceptMatch(uid) {
+    try {
+        const response = await fetch('/api/accept-match', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                uid: uid,
+                confirmed_by: 'User'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Match accepted successfully!');
+            loadMatches(); // Refresh the matches display
+        } else {
+            alert(`Failed to accept match: ${result.error}`);
+        }
+        
+    } catch (error) {
+        alert(`Error accepting match: ${error.message}`);
+    }
+}
+
+async function rejectMatch(uid) {
+    if (!confirm('Are you sure you want to reject this match?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/reject-match', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                uid: uid,
+                confirmed_by: 'User'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert('Match rejected successfully!');
+            loadMatches(); // Refresh the matches display
+        } else {
+            alert(`Failed to reject match: ${result.error}`);
+        }
+        
+    } catch (error) {
+        alert(`Error rejecting match: ${error.message}`);
+    }
+}
+
+// Utility functions
+function formatDate(dateString) {
+    if (!dateString) return '';
+    try {
+        // Try parsing as ISO date first
+        let date;
+        if (typeof dateString === 'string' && dateString.includes('-')) {
+            const [year, month, day] = dateString.split('-');
+            date = new Date(year, parseInt(month) - 1, day);
+        } else {
+            date = new Date(dateString);
+        }
+        
+        if (isNaN(date.getTime())) {
+            throw new Error('Invalid date');
+        }
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    } catch {
+        // If parsing fails, try to extract date components from string
+        const datePattern = /(\d{4})-(\d{2})-(\d{2})|(\d{2})[-/](\d{2})[-/](\d{4})|(\d{2})[-/](\d{2})[-/](\d{2})/;
+        const match = dateString.toString().match(datePattern);
+        if (match) {
+            if (match[1]) { // YYYY-MM-DD
+                return `${match[1]}-${match[2]}-${match[3]}`;
+            } else if (match[4]) { // DD-MM-YYYY or DD/MM/YYYY
+                return `${match[6]}-${match[5]}-${match[4]}`;
+            } else if (match[7]) { // DD-MM-YY or DD/MM/YY
+                const year = parseInt(match[9]) < 50 ? '20' + match[9] : '19' + match[9];
+                return `${year}-${match[8]}-${match[7]}`;
+            }
+        }
+        return dateString;
+    }
+}
+
+function formatAmount(amount) {
+    if (!amount || amount === '') return '';
+    try {
+        return parseFloat(amount).toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    } catch {
+        return amount;
+    }
+} 
+
+// Fetch and display recent uploads
+async function loadRecentUploads() {
+    try {
+        const response = await fetch('/api/recent-uploads');
+        const result = await response.json();
+        const container = document.getElementById('recent-uploads-list');
+        if (response.ok && result.recent_uploads && result.recent_uploads.length > 0) {
+            let html = '<div class="recent-uploads-heading">Recent uploads</div>';
+            html += '<ul class="recent-uploads-ul">';
+            result.recent_uploads.forEach(f => {
+                html += `<li class="recent-upload-item">${f}</li>`;
+            });
+            html += '</ul>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '';
+        }
+    } catch (error) {
+        document.getElementById('recent-uploads-list').innerHTML = '';
+    }
+} 
+
+// Add Clear File List button handler
+async function clearRecentUploads() {
+    try {
+        const response = await fetch('/api/clear-recent-uploads', { method: 'POST' });
+        if (response.ok) {
+            loadRecentUploads();
+        }
+    } catch (error) {
+        // Ignore
+    }
+} 
+
+// Load detected company pairs
+async function loadDetectedPairs() {
+    try {
+        const response = await fetch('/api/detected-pairs');
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayDetectedPairs(result.pairs, 'Smart Scan');
+        } else {
+            console.error('Failed to load detected pairs:', result.error);
+        }
+    } catch (error) {
+        console.error('Error loading detected pairs:', error);
+    }
+}
+
+async function loadManualPairs() {
+    try {
+        const response = await fetch('/api/manual-pairs');
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayDetectedPairs(result.pairs, 'Manual Pairs');
+        } else {
+            console.error('Failed to load manual pairs:', result.error);
+        }
+    } catch (error) {
+        console.error('Error loading manual pairs:', error);
+    }
+}
+
+function displayDetectedPairs(pairs, type) {
+    const displayDiv = document.getElementById('detected-pairs-display');
+    
+    if (!pairs || pairs.length === 0) {
+        displayDiv.innerHTML = `
+            <div style="text-align: center; color: #666; padding: 20px;">
+                No ${type.toLowerCase()} pairs found.
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>${type} Results (${pairs.length} pairs)</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Company Pair</th>
+                                <th>Period</th>
+                                <th>Transactions</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    pairs.forEach(pair => {
+        const description = pair.description || `${pair.lender_company} ↔ ${pair.borrower_company}`;
+        const period = `${pair.month} ${pair.year}`;
+        const transactionCount = pair.transaction_count || 'N/A';
+        const pairType = pair.type || 'detected';
+        
+        html += `
+            <tr>
+                <td><strong>${description}</strong></td>
+                <td>${period}</td>
+                <td><span class="badge bg-info">${transactionCount}</span></td>
+                <td><span class="badge bg-secondary">${pairType}</span></td>
+            </tr>
+        `;
+        
+        // If this pair has an opposite pair, show it too
+        if (pair.opposite_pair) {
+            const oppositeDescription = pair.opposite_pair.description;
+            html += `
+                <tr>
+                    <td style="padding-left: 20px;"><em>${oppositeDescription}</em></td>
+                    <td>${period}</td>
+                    <td><span class="badge bg-info">${transactionCount}</span></td>
+                    <td><span class="badge bg-secondary">${pairType}</span></td>
+                </tr>
+            `;
+        }
+    });
+    
+    html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    displayDiv.innerHTML = html;
+} 
+
+// Load and display pairs
+async function loadPairs() {
+    try {
+        const response = await fetch('/api/pairs');
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayPairs(result.pairs);
+        } else {
+            console.error('Failed to load pairs:', result.error);
+        }
+    } catch (error) {
+        console.error('Error loading pairs:', error);
+    }
+}
+
+function displayPairs(pairs) {
+    const resultDiv = document.getElementById('pairs-table-result');
+    
+    if (!pairs || pairs.length === 0) {
+        resultDiv.innerHTML = `
+            <div style="text-align: center; color: #666; padding: 20px;">
+                No upload pairs found. Upload some files to get started.
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th class="text-center">Pair ID</th>
+                        <th class="text-center">Upload Date</th>
+                        <th class="text-center">Records</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    pairs.forEach(pair => {
+        const uploadDate = new Date(pair.upload_date).toLocaleString();
+        
+        tableHTML += `
+            <tr>
+                <td class="text-center"><code>${pair.pair_id}</code></td>
+                <td class="text-center">${uploadDate}</td>
+                <td class="text-center"><span class="badge bg-info">${pair.record_count}</span></td>
+                <td class="text-center">
+                    <a href="#" onclick="viewPairData('${pair.pair_id}')" class="text-primary text-decoration-none">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    resultDiv.innerHTML = tableHTML;
+}
+
+async function viewPairData(pairId) {
+    try {
+        const response = await fetch(`/api/pair/${pairId}/data`);
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Switch to data table tab and display the pair data
+            showTab('data-table');
+            displayData(result.data, null);
+            
+            // Show which pair is being viewed
+            const resultDiv = document.getElementById('data-table-result');
+            resultDiv.innerHTML = `
+                <div class="alert alert-info">
+                    <strong>Viewing Pair:</strong> ${pairId}
+                </div>
+                ${resultDiv.innerHTML}
+            `;
+        } else {
+            alert(`Failed to load pair data: ${result.error}`);
+        }
+    } catch (error) {
+        alert(`Error loading pair data: ${error.message}`);
+    }
+}
+
+ 
+
+// Load unmatched results
+async function loadUnmatchedResults() {
+    const resultDiv = document.getElementById('unmatched-results-display');
+    resultDiv.innerHTML = '<div style="color: blue;">Loading unmatched results...</div>';
+    
+    // Get selected company pair and period
+    const companySelect = document.getElementById('unmatched-company-pair-select');
+    const periodSelect = document.getElementById('unmatched-period-select');
+    const companyPair = companySelect ? companySelect.value : '';
+    const period = periodSelect ? periodSelect.value : '';
+    
+    let lenderCompany = '';
+    let borrowerCompany = '';
+    let month = '';
+    let year = '';
+    
+    if (companyPair && companyPair.includes('↔')) {
+        const parts = companyPair.split('↔').map(s => s.trim());
+        lenderCompany = parts[0];
+        borrowerCompany = parts[1];
+    }
+    
+    if (period && period !== '-- All Periods --') {
+        const periodParts = period.split(' ');
+        if (periodParts.length === 2) {
+            month = periodParts[0];
+            year = periodParts[1];
+        }
+    }
+    
+    // Build query string
+        let url = '/api/unmatched';
+    const params = [];
+    if (lenderCompany && borrowerCompany) {
+        params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+        params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+    }
+    if (month) params.push(`month=${encodeURIComponent(month)}`);
+    if (year) params.push(`year=${encodeURIComponent(year)}`);
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    
+    try {
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (response.ok) {
+            displayUnmatchedResults(result.unmatched);
+        } else {
+            resultDiv.innerHTML = `<div style="color: red;">Failed to load unmatched results: ${result.error}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div style="color: red;">Failed to load unmatched results: ${error.message}</div>`;
+    }
+}
+
+// Download unmatched results
+async function downloadUnmatchedResults() {
+    try {
+        // Get selected company pair and period
+        const companySelect = document.getElementById('unmatched-company-pair-select');
+        const periodSelect = document.getElementById('unmatched-period-select');
+        const companyPair = companySelect ? companySelect.value : '';
+        const period = periodSelect ? periodSelect.value : '';
+        
+        let lenderCompany = '';
+        let borrowerCompany = '';
+        let month = '';
+        let year = '';
+        
+        if (companyPair && companyPair.includes('↔')) {
+            const parts = companyPair.split('↔').map(s => s.trim());
+            lenderCompany = parts[0];
+            borrowerCompany = parts[1];
+        }
+        
+        if (period && period !== '-- All Periods --') {
+            const periodParts = period.split(' ');
+            if (periodParts.length === 2) {
+                month = periodParts[0];
+                year = periodParts[1];
+            }
+        }
+        
+        // Build query string
+        let url = '/api/download-unmatched';
+        const params = [];
+        if (lenderCompany && borrowerCompany) {
+            params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+            params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+        }
+        if (month) params.push(`month=${encodeURIComponent(month)}`);
+        if (year) params.push(`year=${encodeURIComponent(year)}`);
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        
+        window.location.href = url;
+    } catch (error) {
+        console.error('Error downloading unmatched results:', error);
+    }
+}
+
+// Display unmatched results
+function displayUnmatchedResults(unmatched) {
+    const displayDiv = document.getElementById('unmatched-results-display');
+    
+    if (!unmatched || unmatched.length === 0) {
+        displayDiv.innerHTML = `
+            <div style="text-align: center; color: #666; padding: 20px;">
+                No unmatched transactions found for the selected company pair and period. 
+                <br>Try selecting different options or check if data exists for this combination.
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="unmatched-transactions-wrapper">
+            <div class="unmatched-header">
+                <h4><i class="bi bi-link-45deg"></i> Unmatched Transactions (${unmatched.length} records)</h4>
+            </div>
+            <div class="table-responsive">
+                <table class="unmatched-transactions-table">
+                    <thead>
+                        <tr>
+                            <th data-column="uid" class="uid-cell text-center">UID</th>
+                            <th data-column="lender" class="lender-cell text-center">Lender</th>
+                            <th data-column="borrower" class="borrower-cell text-center">Borrower</th>
+                            <th data-column="statement_month" class="statement-month-cell text-center">Statement Month</th>
+                            <th data-column="statement_year" class="statement-year-cell text-center">Statement Year</th>
+                            <th data-column="date" class="date-cell text-center">Date</th>
+                            <th data-column="particulars" class="particulars-cell text-center">Particulars</th>
+                            <th data-column="vch_type" class="vch-type-cell text-center">Voucher Type</th>
+                            <th data-column="vch_no" class="vch-no-cell text-center">Voucher No</th>
+                            <th data-column="debit" class="amount-cell text-center">Debit Amount</th>
+                            <th data-column="credit" class="amount-cell text-center">Credit Amount</th>
+                            <th data-column="entered_by" class="entered-by-cell text-center">Entered By</th>
+                            <th data-column="input_date" class="input-date-cell text-center">Input Date</th>
+                            <th data-column="role" class="role-cell text-center">Role</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    unmatched.forEach(record => {
+        tableHTML += `
+            <tr>
+                <td data-column="uid" class="uid-cell">${record.uid || ''}</td>
+                <td data-column="lender" class="lender-cell">${record.lender || ''}</td>
+                <td data-column="borrower" class="borrower-cell">${record.borrower || ''}</td>
+                <td data-column="statement_month" class="statement-month-cell">${record.statement_month || ''}</td>
+                <td data-column="statement_year" class="statement-year-cell">${record.statement_year || ''}</td>
+                <td data-column="date" class="date-cell">${formatDate(record.Date) || ''}</td>
+                <td data-column="particulars" class="particulars-cell">${record.Particulars || ''}</td>
+                <td data-column="vch_type" class="vch-type-cell">${record.Vch_Type || ''}</td>
+                <td data-column="vch_no" class="vch-no-cell">${record.Vch_No || ''}</td>
+                <td data-column="debit" class="amount-cell text-end">${formatAmount(record.Debit || '')}</td>
+                <td data-column="credit" class="amount-cell text-end">${formatAmount(record.Credit || '')}</td>
+                <td data-column="entered_by" class="entered-by-cell">${record.entered_by || ''}</td>
+                <td data-column="input_date" class="input-date-cell">${formatDate(record.input_date) || ''}</td>
+                <td data-column="role" class="role-cell">${record.role || ''}</td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    displayDiv.innerHTML = tableHTML;
+}
+
+// Load company pairs for unmatched filter
+async function loadUnmatchedCompanyPairs() {
+    try {
+        const response = await fetch('/api/detected-pairs');
+        const result = await response.json();
+        
+        if (response.ok && result.pairs) {
+            const select = document.getElementById('unmatched-company-pair-select');
+            const periodSelect = document.getElementById('unmatched-period-select');
+            
+            // Clear existing options
+            select.innerHTML = '<option value="">-- All Company Pairs --</option>';
+            periodSelect.innerHTML = '<option value="">-- Select Statement Period --</option>';
+            
+            // Use Set to ensure unique company pairs
+            const uniqueCompanyPairs = new Set();
+            result.pairs.forEach(pair => {
+                const lender = pair.lender_company || pair.current_company || '';
+                const borrower = pair.borrower_company || pair.counterparty || '';
+                const companyPair = `${lender} ↔ ${borrower}`;
+                
+                // Only add if it's a valid company pair (not empty)
+                if (lender && borrower && lender !== borrower) {
+                    uniqueCompanyPairs.add(companyPair);
+                }
+            });
+            
+            // Add unique company pairs to dropdown
+            uniqueCompanyPairs.forEach(companyPair => {
+                const option = document.createElement('option');
+                option.value = companyPair;
+                option.textContent = companyPair;
+                select.appendChild(option);
+            });
+            
+            // Add event listeners for button state and dynamic period filtering
+            select.addEventListener('change', function() {
+                updateUnmatchedPeriods(result.pairs);
+                checkUnmatchedButtonState();
+            });
+            periodSelect.addEventListener('change', checkUnmatchedButtonState);
+            
+            // Initial button state check
+            checkUnmatchedButtonState();
+        }
+    } catch (error) {
+        console.error('Error loading company pairs:', error);
+    }
+}
+
+function updateUnmatchedPeriods(allPairs) {
+    const companySelect = document.getElementById('unmatched-company-pair-select');
+    const periodSelect = document.getElementById('unmatched-period-select');
+    const selectedCompanyPair = companySelect.value;
+    
+    // Clear existing periods
+    periodSelect.innerHTML = '<option value="">-- Select Statement Period --</option>';
+    
+    if (!selectedCompanyPair || selectedCompanyPair === '-- All Company Pairs --') {
+        // If no company pair selected, don't populate periods
+        return;
+    } else {
+        // Filter periods for the selected company pair
+        const [lender, borrower] = selectedCompanyPair.split(' ↔ ');
+        const periods = new Set();
+        
+        allPairs.forEach(pair => {
+            const pairLender = pair.lender_company || pair.current_company || '';
+            const pairBorrower = pair.borrower_company || pair.counterparty || '';
+            
+            // Check if this pair matches the selected company pair
+            if ((pairLender === lender && pairBorrower === borrower) || 
+                (pairLender === borrower && pairBorrower === lender)) {
+                const periodText = `${pair.month} ${pair.year}`;
+                periods.add(periodText);
+            }
+        });
+        
+        // Sort and add filtered periods
+        const sortedPeriods = Array.from(periods).sort((a, b) => {
+            const [monthA, yearA] = a.split(' ');
+            const [monthB, yearB] = b.split(' ');
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthAIndex = monthNames.indexOf(monthA);
+            const monthBIndex = monthNames.indexOf(monthB);
+            
+            if (yearA !== yearB) {
+                return parseInt(yearA) - parseInt(yearB);
+            }
+            return monthAIndex - monthBIndex;
+        });
+        
+        sortedPeriods.forEach(periodText => {
+            const periodOption = document.createElement('option');
+            periodOption.value = periodText;
+            periodOption.textContent = periodText;
+            periodSelect.appendChild(periodOption);
+        });
+    }
+}
+
+function clearUnmatchedCompanySelection() {
+    document.getElementById('unmatched-company-pair-select').value = '';
+    document.getElementById('unmatched-period-select').value = '';
+    checkUnmatchedButtonState();
+}
+
+// Load company pairs for matched filter
+async function loadMatchedCompanyPairs() {
+    try {
+        const response = await fetch('/api/unreconciled-pairs');
+        const result = await response.json();
+        
+        if (response.ok && result.pairs) {
+            const select = document.getElementById('matched-company-pair-select');
+            const periodSelect = document.getElementById('matched-period-select');
+            
+            // Clear existing options
+            select.innerHTML = '<option value="">-- All Company Pairs --</option>';
+            periodSelect.innerHTML = '<option value="">-- Select Statement Period --</option>';
+            
+            // Use Set to ensure unique company pairs
+            const uniqueCompanyPairs = new Set();
+            result.pairs.forEach(pair => {
+                const lender = pair.lender_company || pair.current_company || '';
+                const borrower = pair.borrower_company || pair.counterparty || '';
+                const companyPair = `${lender} ↔ ${borrower}`;
+                
+                // Only add if it's a valid company pair (not empty)
+                if (lender && borrower && lender !== borrower) {
+                    uniqueCompanyPairs.add(companyPair);
+                }
+            });
+            
+            // Add unique company pairs to dropdown
+            uniqueCompanyPairs.forEach(companyPair => {
+                const option = document.createElement('option');
+                option.value = companyPair;
+                option.textContent = companyPair;
+                select.appendChild(option);
+            });
+            
+            // Add event listeners for button state and dynamic period filtering
+            select.addEventListener('change', function() {
+                updateMatchedPeriods(result.pairs);
+                checkMatchedButtonState();
+            });
+            periodSelect.addEventListener('change', checkMatchedButtonState);
+            
+            // Initial button state check
+            checkMatchedButtonState();
+        }
+    } catch (error) {
+        console.error('Error loading matched company pairs:', error);
+    }
+}
+
+function updateMatchedPeriods(allPairs) {
+    const companySelect = document.getElementById('matched-company-pair-select');
+    const periodSelect = document.getElementById('matched-period-select');
+    const selectedCompanyPair = companySelect.value;
+    
+    // Clear existing periods
+    periodSelect.innerHTML = '<option value="">-- Select Statement Period --</option>';
+    
+    if (!selectedCompanyPair || selectedCompanyPair === '-- All Company Pairs --') {
+        // If no company pair selected, don't populate periods
+        return;
+    } else {
+        // Filter periods for the selected company pair
+        const [lender, borrower] = selectedCompanyPair.split(' ↔ ');
+        const periods = new Set();
+        
+        allPairs.forEach(pair => {
+            const pairLender = pair.lender_company || pair.current_company || '';
+            const pairBorrower = pair.borrower_company || pair.counterparty || '';
+            
+            // Check if this pair matches the selected company pair
+            if ((pairLender === lender && pairBorrower === borrower) || 
+                (pairLender === borrower && pairBorrower === lender)) {
+                const periodText = `${pair.month} ${pair.year}`;
+                periods.add(periodText);
+            }
+        });
+        
+        // Sort and add filtered periods
+        const sortedPeriods = Array.from(periods).sort((a, b) => {
+            const [monthA, yearA] = a.split(' ');
+            const [monthB, yearB] = b.split(' ');
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthAIndex = monthNames.indexOf(monthA);
+            const monthBIndex = monthNames.indexOf(monthB);
+            
+            if (yearA !== yearB) {
+                return parseInt(yearA) - parseInt(yearB);
+            }
+            return monthAIndex - monthBIndex;
+        });
+        
+        sortedPeriods.forEach(periodText => {
+            const periodOption = document.createElement('option');
+            periodOption.value = periodText;
+            periodOption.textContent = periodText;
+            periodSelect.appendChild(periodOption);
+        });
+    }
+}
+
+function clearMatchedCompanySelection() {
+    document.getElementById('matched-company-pair-select').value = '';
+    document.getElementById('matched-period-select').value = '';
+    checkMatchedButtonState();
+}
+
+// Load company pairs for reconciliation filter
+async function loadReconciliationCompanyPairs() {
+    try {
+        const response = await fetch('/api/unreconciled-pairs');
+        const result = await response.json();
+        
+        if (response.ok && result.pairs) {
+            const select = document.getElementById('reconciliation-company-pair-select');
+            const periodSelect = document.getElementById('reconciliation-period-select');
+            
+            // Clear existing options
+            select.innerHTML = '<option value="">-- Select Company Pair --</option>';
+            periodSelect.innerHTML = '<option value="">-- Select Statement Period --</option>';
+            
+            // Use Set to ensure unique company pairs
+            const uniqueCompanyPairs = new Set();
+            result.pairs.forEach(pair => {
+                const lender = pair.lender_company || pair.current_company || '';
+                const borrower = pair.borrower_company || pair.counterparty || '';
+                const companyPair = `${lender} ↔ ${borrower}`;
+                
+                // Only add if it's a valid company pair (not empty)
+                if (lender && borrower && lender !== borrower) {
+                    uniqueCompanyPairs.add(companyPair);
+                }
+            });
+            
+            // Add unique company pairs to dropdown
+            uniqueCompanyPairs.forEach(companyPair => {
+                const option = document.createElement('option');
+                option.value = companyPair;
+                option.textContent = companyPair;
+                select.appendChild(option);
+            });
+            
+            // Add event listeners for button state and dynamic period filtering
+            select.addEventListener('change', function() {
+                updateReconciliationPeriods(result.pairs);
+                checkReconciliationButtonState();
+            });
+            periodSelect.addEventListener('change', checkReconciliationButtonState);
+            
+            // Initial button state check
+            checkReconciliationButtonState();
+        }
+    } catch (error) {
+        console.error('Error loading reconciliation company pairs:', error);
+    }
+}
+
+function updateReconciliationPeriods(allPairs) {
+    const companySelect = document.getElementById('reconciliation-company-pair-select');
+    const periodSelect = document.getElementById('reconciliation-period-select');
+    const selectedCompanyPair = companySelect.value;
+    
+    // Clear existing periods
+    periodSelect.innerHTML = '<option value="">-- Select Statement Period --</option>';
+    
+    if (!selectedCompanyPair || selectedCompanyPair === '-- Select Company Pair --') {
+        // If no company pair selected, don't populate periods
+        return;
+    } else {
+        // Filter periods for the selected company pair
+        const [lender, borrower] = selectedCompanyPair.split(' ↔ ');
+        const periods = new Set();
+        
+        allPairs.forEach(pair => {
+            const pairLender = pair.lender_company || pair.current_company || '';
+            const pairBorrower = pair.borrower_company || pair.counterparty || '';
+            
+            // Check if this pair matches the selected company pair
+            if ((pairLender === lender && pairBorrower === borrower) || 
+                (pairLender === borrower && pairBorrower === lender)) {
+                const periodText = `${pair.month} ${pair.year}`;
+                periods.add(periodText);
+            }
+        });
+        
+        // Sort and add filtered periods
+        const sortedPeriods = Array.from(periods).sort((a, b) => {
+            const [monthA, yearA] = a.split(' ');
+            const [monthB, yearB] = b.split(' ');
+            
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            const monthAIndex = monthNames.indexOf(monthA);
+            const monthBIndex = monthNames.indexOf(monthB);
+            
+            if (yearA !== yearB) {
+                return parseInt(yearA) - parseInt(yearB);
+            }
+            return monthAIndex - monthBIndex;
+        });
+        
+        sortedPeriods.forEach(periodText => {
+            const periodOption = document.createElement('option');
+            periodOption.value = periodText;
+            periodOption.textContent = periodText;
+            periodSelect.appendChild(periodOption);
+        });
+    }
+}
+
+function clearReconciliationSelection() {
+    document.getElementById('reconciliation-company-pair-select').value = '';
+    document.getElementById('reconciliation-period-select').value = '';
+    checkReconciliationButtonState();
+}
+
+function checkReconciliationButtonState() {
+    const companySelect = document.getElementById('reconciliation-company-pair-select');
+    const periodSelect = document.getElementById('reconciliation-period-select');
+    const runButton = document.getElementById('run-reconciliation-btn');
+    
+    const companySelected = companySelect && companySelect.value && companySelect.value !== '-- Select Company Pair --';
+    const periodSelected = periodSelect && periodSelect.value && periodSelect.value !== '-- Select Statement Period --';
+    
+    if (runButton) {
+        if (companySelected && periodSelected) {
+            runButton.disabled = false;
+            runButton.classList.remove('btn-secondary');
+            runButton.classList.add('btn-primary');
+        } else {
+            runButton.disabled = true;
+            runButton.classList.remove('btn-primary');
+            runButton.classList.add('btn-secondary');
+        }
+    }
+}
+
+function checkMatchedButtonState() {
+    const companySelect = document.getElementById('matched-company-pair-select');
+    const periodSelect = document.getElementById('matched-period-select');
+    const viewButton = document.getElementById('view-matched-btn');
+    const downloadButton = document.getElementById('download-matched-btn');
+    
+    const companySelected = companySelect && companySelect.value && companySelect.value !== '-- All Company Pairs --';
+    const periodSelected = periodSelect && periodSelect.value && periodSelect.value !== '-- All Periods --';
+    
+    if (viewButton) {
+        if (companySelected && periodSelected) {
+            viewButton.disabled = false;
+            viewButton.classList.remove('btn-secondary');
+            viewButton.classList.add('btn-primary');
+        } else {
+            viewButton.disabled = true;
+            viewButton.classList.remove('btn-primary');
+            viewButton.classList.add('btn-secondary');
+        }
+    }
+    
+    if (downloadButton) {
+        if (companySelected && periodSelected) {
+            downloadButton.disabled = false;
+            downloadButton.classList.remove('btn-secondary');
+            downloadButton.classList.add('btn-success');
+        } else {
+            downloadButton.disabled = true;
+            downloadButton.classList.remove('btn-success');
+            downloadButton.classList.add('btn-secondary');
+        }
+    }
+}
+
+function checkUnmatchedButtonState() {
+    const companySelect = document.getElementById('unmatched-company-pair-select');
+    const periodSelect = document.getElementById('unmatched-period-select');
+    const viewButton = document.getElementById('view-unmatched-btn');
+    const downloadButton = document.getElementById('download-unmatched-btn');
+    
+    const companySelected = companySelect && companySelect.value && companySelect.value !== '-- All Company Pairs --';
+    const periodSelected = periodSelect && periodSelect.value && periodSelect.value !== '-- All Periods --';
+    
+    if (viewButton) {
+        if (companySelected && periodSelected) {
+            viewButton.disabled = false;
+            viewButton.classList.remove('btn-secondary');
+            viewButton.classList.add('btn-primary');
+        } else {
+            viewButton.disabled = true;
+            viewButton.classList.remove('btn-primary');
+            viewButton.classList.add('btn-secondary');
+        }
+    }
+    
+    if (downloadButton) {
+        if (companySelected && periodSelected) {
+            downloadButton.disabled = false;
+            downloadButton.classList.remove('btn-secondary');
+            downloadButton.classList.add('btn-success');
+        } else {
+            downloadButton.disabled = true;
+            downloadButton.classList.remove('btn-success');
+            downloadButton.classList.add('btn-secondary');
+        }
+    }
+}
