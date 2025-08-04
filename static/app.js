@@ -782,7 +782,6 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                             <th data-column="borrower_vch_type">Borrower Vch Type</th>
                             <th data-column="borrower_role">Borrower Role</th>
                             <!-- Match Details Columns -->
-                            <th data-column="confidence">Confidence</th>
                             <th data-column="audit_info">Audit Info</th>
                             <th data-column="actions">Actions</th>
                     </tr>
@@ -916,18 +915,8 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <td data-column="borrower_vch_type">${borrowerRecord.Vch_Type || ''}</td>
                 <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
-                <td data-column="confidence">
-                    <div class="confidence-indicator">
-                        <span class="confidence-badge medium">
-                        N/A
-                    </span>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill medium" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </td>
                 <td data-column="audit_info">
-                    <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 12px;">
+                    <pre class="audit-info-text" style="white-space: pre-wrap; font-size: 10px;">
                         ${formatAuditInfo(match.audit_info) || ''}
                     </pre>
                 </td>

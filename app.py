@@ -509,8 +509,7 @@ def download_matches():
                 row_data['Borrower Vch Type'] = borrower_vch_type
                 row_data['Borrower Role'] = borrower_role
                 
-                # Match details section (3 columns)
-                row_data['Confidence'] = 'N/A'  # No longer using match_score
+                # Match details section (2 columns)
                 row_data['Keyword'] = row.get('keywords') or 'Auto'
                 row_data['Actions'] = 'Pending'
                 
