@@ -153,7 +153,7 @@ async function uploadFile() {
     parseBtn.disabled = true;
     parseBtn.textContent = 'Processing...';
     uploadMsg.textContent = '';
-    uploadResult.innerHTML = '<div class="alert alert-info" role="alert"><i class="bi bi-info-circle me-2"></i>Uploading file pair...</div>';
+    uploadResult.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Uploading file pair...</div>';
     
     try {
         const response = await fetch('/api/upload-pair', {
@@ -164,7 +164,7 @@ async function uploadFile() {
         const result = await response.json();
         
         if (response.ok) {
-            uploadResult.innerHTML = `<div class="alert alert-success" role="alert"><i class="bi bi-check-circle me-2"></i>File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
+            uploadResult.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
             
             // Reset form
             fileInput1.value = '';
@@ -185,11 +185,11 @@ async function uploadFile() {
             }, 8000);
             
         } else {
-            uploadResult.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${result.error}</div>`;
+            uploadResult.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${result.error}</div>`;
         }
         
     } catch (error) {
-        uploadResult.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${error.message}</div>`;
+        uploadResult.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${error.message}</div>`;
     } finally {
         parseBtn.disabled = false;
         parseBtn.textContent = 'Upload Pair';
@@ -218,8 +218,8 @@ function displayData(data, columnOrder) {
     
     if (!data || data.length === 0) {
         resultDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No data available. Upload a file to get started.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No data available. Upload a file to get started.
             </div>
         `;
         return;
@@ -233,7 +233,7 @@ function displayData(data, columnOrder) {
     
     let tableHTML = `
         <div class="report-table-wrapper" style="max-height: 70vh; overflow-y: auto;">
-            <table class="matched-transactions-table">
+            <table class="table matched-transactions-table">
                 <thead>
                     <tr>
                         ${columns.map(col => `<th>${col}</th>`).join('')}
@@ -265,12 +265,36 @@ function displayData(data, columnOrder) {
                 </tbody>
             </table>
         </div>
-        <div style="margin-top: 10px; color: #666;">
-            Total records: ${data.length}
+        <div class="alert alert-light mt-2">
+            <i class="bi bi-info-circle me-2"></i>Total records: ${data.length}
         </div>
     `;
     
     resultDiv.innerHTML = tableHTML;
+}
+
+// Helper function to show Bootstrap notifications
+function showNotification(message, type = 'info', targetId = 'reconciliation-result') {
+    const targetDiv = document.getElementById(targetId);
+    if (targetDiv) {
+        const alertClass = type === 'error' ? 'alert-danger' : 
+                          type === 'success' ? 'alert-success' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+        const iconClass = type === 'error' ? 'bi-exclamation-circle' : 
+                         type === 'success' ? 'bi-check-circle' : 
+                         type === 'warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
+        
+        targetDiv.innerHTML = `<div class="alert ${alertClass}"><i class="bi ${iconClass} me-2"></i>${message}</div>`;
+        
+        // Auto-remove after 5 seconds for success/info messages
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                if (targetDiv.innerHTML.includes(message)) {
+                    targetDiv.innerHTML = '';
+                }
+            }, 5000);
+        }
+    }
 }
 
 // Helper function to get badge class for match status
@@ -655,10 +679,10 @@ async function downloadMatches() {
             window.URL.revokeObjectURL(downloadUrl);
         } else {
             const result = await response.json();
-            alert(`Failed to download: ${result.error}`);
+            showNotification(`Failed to download: ${result.error}`, 'error');
         }
     } catch (error) {
-        alert(`Failed to download: ${error.message}`);
+        showNotification(`Failed to download: ${error.message}`, 'error');
     }
 }
 
@@ -716,15 +740,15 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
         // Check if we're in the matched results display
         if (targetDivId === 'matched-results-display') {
             resultDiv.innerHTML = `
-                <div style="text-align: center; color: #666; padding: 20px;">
-                    No matches found for the selected company pair and period. 
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle me-2"></i>No matches found for the selected company pair and period. 
                     <br>Try selecting different options or run reconciliation first.
                 </div>
             `;
         } else {
         resultDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No matches found. Run reconciliation to find matching transactions.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No matches found. Run reconciliation to find matching transactions.
             </div>
         `;
         }
@@ -992,14 +1016,14 @@ async function acceptMatch(uid) {
         const result = await response.json();
         
         if (response.ok) {
-            alert('Match accepted successfully!');
+            showNotification('Match accepted successfully!', 'success');
             loadMatches(); // Refresh the matches display
         } else {
-            alert(`Failed to accept match: ${result.error}`);
+            showNotification(`Failed to accept match: ${result.error}`, 'error');
         }
         
     } catch (error) {
-        alert(`Error accepting match: ${error.message}`);
+        showNotification(`Error accepting match: ${error.message}`, 'error');
     }
 }
 
@@ -1023,14 +1047,14 @@ async function rejectMatch(uid) {
         const result = await response.json();
         
         if (response.ok) {
-            alert('Match rejected successfully!');
+            showNotification('Match rejected successfully!', 'success');
             loadMatches(); // Refresh the matches display
         } else {
-            alert(`Failed to reject match: ${result.error}`);
+            showNotification(`Failed to reject match: ${result.error}`, 'error');
         }
         
     } catch (error) {
-        alert(`Error rejecting match: ${error.message}`);
+        showNotification(`Error rejecting match: ${error.message}`, 'error');
     }
 }
 
@@ -1155,8 +1179,8 @@ function displayDetectedPairs(pairs, type) {
     
     if (!pairs || pairs.length === 0) {
         displayDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No ${type.toLowerCase()} pairs found.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No ${type.toLowerCase()} pairs found.
             </div>
         `;
         return;
@@ -1242,8 +1266,8 @@ function displayPairs(pairs) {
     
     if (!pairs || pairs.length === 0) {
         resultDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No upload pairs found. Upload some files to get started.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No upload pairs found. Upload some files to get started.
             </div>
         `;
         return;
@@ -1308,10 +1332,10 @@ async function viewPairData(pairId) {
                 ${resultDiv.innerHTML}
             `;
         } else {
-            alert(`Failed to load pair data: ${result.error}`);
+            showNotification(`Failed to load pair data: ${result.error}`, 'error');
         }
     } catch (error) {
-        alert(`Error loading pair data: ${error.message}`);
+        showNotification(`Error loading pair data: ${error.message}`, 'error');
     }
 }
 
@@ -1320,7 +1344,7 @@ async function viewPairData(pairId) {
 // Load unmatched results
 async function loadUnmatchedResults() {
     const resultDiv = document.getElementById('unmatched-results-display');
-            resultDiv.innerHTML = '<div class="alert alert-info" role="alert"><i class="bi bi-info-circle me-2"></i>Loading unmatched results...</div>';
+    resultDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Loading unmatched results...</div>';
     
     // Get selected company pair and period
     const companySelect = document.getElementById('unmatched-company-pair-select');
@@ -1367,10 +1391,10 @@ async function loadUnmatchedResults() {
         if (response.ok) {
             displayUnmatchedResults(result.unmatched);
         } else {
-            resultDiv.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${result.error}</div>`;
+            resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${result.error}</div>`;
         }
     } catch (error) {
-        resultDiv.innerHTML = `<div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${error.message}</div>`;
+        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${error.message}</div>`;
     }
 }
 
@@ -1427,8 +1451,8 @@ function displayUnmatchedResults(unmatched) {
     
     if (!unmatched || unmatched.length === 0) {
         displayDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No unmatched transactions found for the selected company pair and period. 
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No unmatched transactions found for the selected company pair and period. 
                 <br>Try selecting different options or check if data exists for this combination.
             </div>
         `;

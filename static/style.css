@@ -7,8 +7,18 @@ body {
     color: #374767;
 }
 
-h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label {
+h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label, code {
     font-family: 'Ubuntu', 'Segoe UI', sans-serif;
+}
+
+/* Code element styling */
+code {
+    font-family: 'Ubuntu', 'Segoe UI', sans-serif !important;
+    font-size: 14px !important;
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: #495057;
 }
 
 /* Layout */
