@@ -172,7 +172,7 @@ class ExportService:
         return {
             'Lender_UID': row.get(f'{prefix}uid' if prefix else 'uid', ''),
             'Lender_Date': row.get(f'{prefix}Date' if prefix else 'Date', ''),
-            'Lender_Particulars': row.get(f'{prefix}Particulars' if prefix else 'Particulars', ''),
+            'Lender_Particulars': row.get(f'{prefix}particulars' if prefix else 'Particulars', ''),
             'Lender_Debit': row.get(f'{prefix}Debit' if prefix else 'Debit', 0),
             'Lender_Vch_Type': row.get(f'{prefix}Vch_Type' if prefix else 'Vch_Type', ''),
             'Lender_Role': 'Lender'
@@ -185,7 +185,7 @@ class ExportService:
         return {
             'Borrower_UID': row.get(f'{prefix}uid' if prefix else 'uid', ''),
             'Borrower_Date': row.get(f'{prefix}Date' if prefix else 'Date', ''),
-            'Borrower_Particulars': row.get(f'{prefix}Particulars' if prefix else 'Particulars', ''),
+            'Borrower_Particulars': row.get(f'{prefix}particulars' if prefix else 'Particulars', ''),
             'Borrower_Credit': row.get(f'{prefix}Credit' if prefix else 'Credit', 0),
             'Borrower_Vch_Type': row.get(f'{prefix}Vch_Type' if prefix else 'Vch_Type', ''),
             'Borrower_Role': 'Borrower'
