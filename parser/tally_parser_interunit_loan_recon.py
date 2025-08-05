@@ -38,14 +38,14 @@ def extract_company_name(metadata: pd.DataFrame) -> Tuple[str, str, int]:
                 company_name = re.sub(r'\s*[Aa]ccount\.?\s*$', '', company_name).strip()
                 company_name = re.sub(r'\s*[Ll]edger\.?\s*$', '', company_name).strip()
                 # Debug print to see what's being extracted
-                print(f"DEBUG: Extracted company name: '{company_name}' from cell: '{cell}'")
+                # print(f"DEBUG: Extracted company name: '{company_name}' from cell: '{cell}'")
                 return company_name, cell, i
     
     # Fallback: use first non-empty cell
     for i, row in metadata.iterrows():
         cell = str(row[0]).strip()
         if cell and cell not in ['', 'None', 'nan']:
-            print(f"DEBUG: Using fallback company name: '{cell}' from cell: '{cell}'")
+            # print(f"DEBUG: Using fallback company name: '{cell}' from cell: '{cell}'")
             return cell, cell, i
     
     return "Unknown Company", "", 0
@@ -120,12 +120,14 @@ def parse_tally_file(file_path: str, sheet_name: str) -> pd.DataFrame:
     #     except Exception:
     #         pass
 
-    for rng in list(ws.merged_cells.ranges):
-        val = ws[rng.coord.split(":")[0]].value
-        ws.unmerge_cells(str(rng))
-        for row in ws[rng.coord]:
-            for cell in row:
-                cell.value = val
+    # Optimize merged cells processing - only process if there are merged cells
+    if ws.merged_cells.ranges:
+        for rng in list(ws.merged_cells.ranges):
+            val = ws[rng.coord.split(":")[0]].value
+            ws.unmerge_cells(str(rng))
+            for row in ws[rng.coord]:
+                for cell in row:
+                    cell.value = val
 
     headers = [clean(c.value) if c.value else f"Unnamed_{i+1}" for i, c in enumerate(ws[header_row_idx])]
 
@@ -136,13 +138,20 @@ def parse_tally_file(file_path: str, sheet_name: str) -> pd.DataFrame:
 
     num_cols = len(headers)
 
+    # Optimize row processing with batch operations
     collapsed_rows = []
     entered_by_list = []
     current_row = None
     last_entered_by = ""
+    
+    # Pre-compile regex for better performance
+    entered_by_pattern = re.compile(r"entered by\s*:\s*(.*)", re.IGNORECASE)
+    
     for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
         cleaned = [clean(c) for c in row][:num_cols] + ["" for _ in range(num_cols - len(row))]
         entered_by_found = False
+        
+        # Optimize entered_by detection
         for idx, cell in enumerate(cleaned):
             if "entered by :" in cell.lower():
                 for next_idx in range(idx + 1, len(cleaned)):
@@ -150,21 +159,25 @@ def parse_tally_file(file_path: str, sheet_name: str) -> pd.DataFrame:
                         last_entered_by = cleaned[next_idx]
                         break
                 else:
-                    match = re.search(r"entered by\s*:\s*(.*)", cell, re.IGNORECASE)
+                    match = entered_by_pattern.search(cell)
                     if match:
                         last_entered_by = match.group(1).strip()
                 entered_by_found = True
                 break
+                
         if entered_by_found:
             continue
-        if (
+            
+        # Optimize row merging logic
+        should_merge = (
             (not cleaned[headers.index("Date")] if "Date" in headers else True)
             and (not cleaned[headers.index("dr_cr")] if "dr_cr" in headers else True)
             and (cleaned[headers.index("Particulars")] if "Particulars" in headers else False)
             and current_row is not None
-        ):
+        )
+        
+        if should_merge:
             idx = headers.index("Particulars")
-            # Use space instead of newline since we're cleaning newlines
             current_row[idx] = (current_row[idx] + " " + cleaned[idx]).strip()
         else:
             if current_row is not None:
@@ -172,6 +185,7 @@ def parse_tally_file(file_path: str, sheet_name: str) -> pd.DataFrame:
                 entered_by_list.append(last_entered_by)
                 last_entered_by = ""
             current_row = cleaned
+            
     if current_row is not None:
         collapsed_rows.append(current_row)
         entered_by_list.append(last_entered_by)
@@ -230,10 +244,10 @@ def parse_tally_file(file_path: str, sheet_name: str) -> pd.DataFrame:
     df['borrower'] = [pair[1] for pair in lender_borrower_pairs]
     
     # Debug print to see what's being assigned
-    print(f"DEBUG: Current company: '{current_company}'")
-    print(f"DEBUG: Counterparty: '{counterparty}'")
-    print(f"DEBUG: Sample lender values: {df['lender'].head().tolist()}")
-    print(f"DEBUG: Sample borrower values: {df['borrower'].head().tolist()}")
+    # print(f"DEBUG: Current company: '{current_company}'")
+    # print(f"DEBUG: Counterparty: '{counterparty}'")
+    # print(f"DEBUG: Sample lender values: {df['lender'].head().tolist()}")
+    # print(f"DEBUG: Sample borrower values: {df['borrower'].head().tolist()}")
 
     if "Date" in df.columns:
         df["Date"] = pd.to_datetime(
@@ -334,7 +348,7 @@ if __name__ == "__main__":
         df = parse_tally_file(input_file, sheet_name)
         output_file = f"Parsed_{input_file.split('/')[-1]}"
         df.to_excel(output_file, index=False)
-        print(f"Successfully parsed {input_file} and saved as {output_file}")
+        # print(f"Successfully parsed {input_file} and saved as {output_file}")
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

@@ -733,6 +733,29 @@ function formatAuditInfo(auditInfoStr) {
     }
 }
 
+// Function to deduplicate matches and show only unique matches
+function deduplicateMatches(matches) {
+    const uniqueMatches = [];
+    const processedPairs = new Set();
+    
+    matches.forEach(match => {
+        // Create a unique key for each match pair
+        const uid1 = match.uid;
+        const uid2 = match.matched_uid;
+        const pairKey1 = `${uid1}-${uid2}`;
+        const pairKey2 = `${uid2}-${uid1}`;
+        
+        // Check if we've already processed this pair
+        if (!processedPairs.has(pairKey1) && !processedPairs.has(pairKey2)) {
+            uniqueMatches.push(match);
+            processedPairs.add(pairKey1);
+            processedPairs.add(pairKey2);
+        }
+    });
+    
+    return uniqueMatches;
+}
+
 function displayMatches(matches, targetDivId = 'reconciliation-result') {
     const resultDiv = document.getElementById(targetDivId);
     
@@ -755,11 +778,14 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
         return;
     }
     
+    // Deduplicate matches to show only unique matches
+    const uniqueMatches = deduplicateMatches(matches);
+    
     // Get dynamic lender/borrower names from the first match (same logic as Excel export)
     let lender_name = 'Lender';
     let borrower_name = 'Borrower';
-    if (matches.length > 0) {
-        const first_match = matches[0];
+    if (uniqueMatches.length > 0) {
+        const first_match = uniqueMatches[0];
         // Determine which is lender (Debit side) vs borrower (Credit side)
         if (first_match.Debit && first_match.Debit > 0) {
             // Main record is lender (Debit side)
@@ -785,7 +811,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
     let tableHTML = `
         <div class="matched-transactions-wrapper">
             <div class="matched-header">
-                <h6><i class="bi bi-link-45deg"></i> Matched Transactions (${matches.length} pairs)</h6>
+                <h6><i class="bi bi-link-45deg"></i> Matched Transactions (${uniqueMatches.length} transactions)</h6>
             </div>
             <div class="table-responsive">
                 <table class="matched-transactions-table">
@@ -813,7 +839,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <tbody>
     `;
     
-    matches.forEach(match => {
+    uniqueMatches.forEach(match => {
         // Determine which record is lender and which is borrower based on Debit/Credit values
         let lenderRecord, borrowerRecord, lenderUid, borrowerUid, lenderRole, borrowerRole;
         
@@ -2010,4 +2036,40 @@ function clearAllReconciliationHistory() {
 // Function to clear the reconciliation notification (legacy function for backward compatibility)
 function clearReconciliationNotification() {
     clearAllReconciliationHistory();
+}
+
+// Function to truncate the database table
+async function truncateTable() {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL data in the table!\n\nThis action cannot be undone. Are you sure you want to continue?')) {
+        return;
+    }
+    
+    const resultDiv = document.getElementById('truncate-result');
+    resultDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Truncating table...</div>';
+    
+    try {
+        const response = await fetch('/api/truncate-table', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            resultDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${result.message}</div>`;
+            
+            // Refresh data displays
+            setTimeout(() => {
+                loadData();
+                loadUnreconciledPairs();
+                showNotification('Table truncated successfully. All data has been cleared.', 'success');
+            }, 1000);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to truncate table: ${result.error || 'Unknown error'}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message}</div>`;
+    }
 }

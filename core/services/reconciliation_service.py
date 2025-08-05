@@ -3,6 +3,7 @@ ReconciliationService - Handles reconciliation logic and orchestration.
 """
 from typing import Dict, Any, Optional
 from core import database
+from core import matching
 
 
 class ReconciliationService:
@@ -20,8 +21,8 @@ class ReconciliationService:
             # Get all unmatched transactions if no company pair specified
             data = database.get_unmatched_data()
         
-        # Perform matching logic (using existing implementation)
-        matches = database.find_matches(data)
+        # Perform matching logic using the matching module
+        matches = matching.find_matches(data)
         
         # Update database with matches
         database.update_matches(matches)
@@ -33,8 +34,8 @@ class ReconciliationService:
         # Get unmatched transactions for this pair
         data = database.get_unmatched_data_by_pair_id(pair_id)
         
-        # Perform matching logic
-        matches = database.find_matches(data)
+        # Perform matching logic using the matching module
+        matches = matching.find_matches(data)
         
         # Update database with matches
         database.update_matches(matches)
