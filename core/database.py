@@ -187,6 +187,14 @@ def update_matches(matches):
                 common_text = match.get('common_text', '')
                 keywords = common_text
                 match_method = 'jaccard'
+            elif match['match_type'] == 'INTERUNIT_LOAN':
+                # For INTERUNIT_LOAN matches, extract keywords from audit trail
+                if 'audit_trail' in match and 'keywords' in match['audit_trail']:
+                    keywords_dict = match['audit_trail']['keywords']
+                    keywords = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
+                else:
+                    keywords = 'Interunit loan keywords'
+                match_method = 'cross_reference'
             else:
                 keywords = ''
                 match_method = ''
@@ -209,11 +217,32 @@ def update_matches(matches):
                 if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                     audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
                 # print(f"DEBUG: Writing COMMON_TEXT audit_info for {match.get('lender_uid')} and {match.get('borrower_uid')}: {audit_info}")
+            elif match['match_type'] == 'INTERUNIT_LOAN':
+                # Store INTERUNIT_LOAN specific audit information
+                if 'audit_trail' in match:
+                    audit_info.update(match['audit_trail'])
+                    # Store amount information
+                    audit_info['lender_amount'] = match.get('amount', '')
+                    audit_info['borrower_amount'] = match.get('amount', '')
+                    # Store keywords as string, not object
+                    if 'keywords' in match['audit_trail']:
+                        keywords_dict = match['audit_trail']['keywords']
+                        audit_info['keywords'] = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
             elif 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                 audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
 
-            # Convert to JSON string
-            audit_json = json.dumps(audit_info)
+            # Convert to JSON string (handle Decimal objects)
+            def convert_decimal(obj):
+                if hasattr(obj, '__str__'):
+                    return str(obj)
+                return obj
+            
+            # Convert any Decimal objects to strings
+            audit_info_serializable = {}
+            for key, value in audit_info.items():
+                audit_info_serializable[key] = convert_decimal(value)
+            
+            audit_json = json.dumps(audit_info_serializable)
             
             # Determine match status: auto-accept PO and LC matches, manual verification for MANUAL_VERIFICATION
             if match['match_type'] == 'MANUAL_VERIFICATION':
@@ -1052,6 +1081,48 @@ def truncate_table():
                 'message': f'Table truncated successfully. Removed {count_before} records.',
                 'records_removed': count_before,
                 'records_remaining': count_after
+            }
+            
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def reset_all_matches():
+    """Reset all match status columns - makes all transactions available for matching again"""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    try:
+        with engine.connect() as conn:
+            # Get count of matched records before reset
+            result = conn.execute(text("SELECT COUNT(*) FROM tally_data WHERE match_status IS NOT NULL"))
+            matched_count = result.fetchone()[0]
+            
+            # Reset all match-related columns
+            conn.execute(text("""
+                UPDATE tally_data 
+                SET match_status = NULL,
+                    matched_with = NULL,
+                    keywords = NULL,
+                    match_method = NULL,
+                    audit_info = NULL,
+                    date_matched = NULL
+                WHERE match_status IS NOT NULL
+            """))
+            conn.commit()
+            
+            # Get count after reset
+            result = conn.execute(text("SELECT COUNT(*) FROM tally_data WHERE match_status IS NOT NULL"))
+            remaining_matched = result.fetchone()[0]
+            
+            return {
+                'success': True,
+                'message': f'All matches reset successfully. Reset {matched_count} matched records.',
+                'records_reset': matched_count,
+                'remaining_matched': remaining_matched
             }
             
     except Exception as e:

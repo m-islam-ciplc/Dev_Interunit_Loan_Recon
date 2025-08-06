@@ -13,4 +13,13 @@ def truncate_table():
         result = database.truncate_table()
         return jsonify(result)
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@management_bp.route('/reset-all-matches', methods=['POST'])
+def reset_all_matches():
+    """Reset all match status columns - makes all transactions available for matching again"""
+    try:
+        result = database.reset_all_matches()
+        return jsonify(result)
+    except Exception as e:
         return jsonify({'error': str(e)}), 500 

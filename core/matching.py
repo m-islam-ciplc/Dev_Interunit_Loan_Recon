@@ -456,6 +456,12 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                                     'lender_reference': f"{lender_account_match.group(1)}-{lender_account_full}",
                                     'borrower_reference': f"{borrower_account_match.group(1)}-{borrower_account_full}",
                                     'match_reason': f"Interunit loan cross-reference match: {lender_last_digits} ↔ {borrower_last_digits}",
+                                    'keywords': {
+                                        'lender_interunit_keywords': ['amount paid as interunit loan', 'interunit fund transfer'],
+                                        'borrower_interunit_keywords': ['amount received as interunit loan', 'interunit fund transfer'],
+                                        'lender_account_patterns': ['MTBL-SND-A/C-', 'Prime Bank Limited-SND-', 'Mutual Trust Bank Ltd-SND-'],
+                                        'cross_reference_patterns': ['#\\d{4,5}']
+                                    },
                                     'validation': {
                                         'lender_interunit': is_lender_interunit,
                                         'borrower_interunit': is_borrower_interunit,

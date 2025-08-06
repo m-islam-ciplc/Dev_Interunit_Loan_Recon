@@ -722,6 +722,21 @@ function formatAuditInfo(auditInfoStr) {
                     formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
                 }
                 break;
+            case 'INTERUNIT_LOAN':
+                formattedInfo += `Interunit Loan Match\n`;
+                if (auditInfo.lender_reference) {
+                    formattedInfo += `Lender: ${auditInfo.lender_reference}\n`;
+                }
+                if (auditInfo.borrower_reference) {
+                    formattedInfo += `Borrower: ${auditInfo.borrower_reference}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
+                break;
             default:
                 formattedInfo += `Type: ${auditInfo.match_type}\nKeywords: ${auditInfo.keywords}\n`;
         }
@@ -832,6 +847,8 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                             <th data-column="borrower_vch_type">Borrower Vch Type</th>
                             <th data-column="borrower_role">Borrower Role</th>
                             <!-- Match Details Columns -->
+                            <th data-column="keywords">Keywords</th>
+                            <th data-column="match_method">Match Method</th>
                             <th data-column="audit_info">Audit Info</th>
                             <th data-column="actions">Actions</th>
                     </tr>
@@ -2068,6 +2085,42 @@ async function truncateTable() {
             }, 1000);
         } else {
             resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to truncate table: ${result.error || 'Unknown error'}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message}</div>`;
+    }
+}
+
+// Function to reset all matches
+async function resetAllMatches() {
+    if (!confirm('⚠️ WARNING: This will reset all match status columns!\n\nThis will make all transactions available for matching again. Are you sure you want to continue?')) {
+        return;
+    }
+    
+    const resultDiv = document.getElementById('reset-matches-result');
+    resultDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Resetting all matches...</div>';
+    
+    try {
+        const response = await fetch('/api/reset-all-matches', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            resultDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${result.message}</div>`;
+            
+            // Refresh data displays
+            setTimeout(() => {
+                loadData();
+                loadUnreconciledPairs();
+                showNotification('All matches reset successfully. Transactions are now available for matching again.', 'success');
+            }, 1000);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to reset matches: ${result.error || 'Unknown error'}</div>`;
         }
     } catch (error) {
         resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message}</div>`;

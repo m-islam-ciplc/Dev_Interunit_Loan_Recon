@@ -303,6 +303,23 @@
                     <strong>Warning:</strong> These operations are irreversible and will permanently delete data.
                 </div>
                 
+                <!-- Reset All Matches Section -->
+                <div class="card border-warning mb-3">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="bi bi-arrow-clockwise me-2"></i>Reset All Matches</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            This will reset all match status columns, making all transactions available for matching again. 
+                            This clears: <code>match_status</code>, <code>matched_with</code>, <code>keywords</code>, <code>match_method</code>, <code>audit_info</code>, and <code>date_matched</code>.
+                        </p>
+                        <button type="button" class="btn btn-warning" onclick="resetAllMatches()">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Reset All Matches
+                        </button>
+                        <div id="reset-matches-result" class="mt-3"></div>
+                    </div>
+                </div>
+
                 <!-- Truncate Table Section -->
                 <div class="card border-danger">
                     <div class="card-header bg-danger text-white">
