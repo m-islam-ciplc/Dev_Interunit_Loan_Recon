@@ -165,8 +165,8 @@ def update_matches(matches):
     with engine.connect() as conn:
         for i, match in enumerate(matches):
             # Prepare match information and determine auto-acceptance
-            # PO and LC matches are auto-accepted due to high confidence
-            auto_accept = match['match_type'] in ['PO', 'LC']
+            # PO, LC, and INTERUNIT_LOAN matches are auto-accepted due to high confidence
+            auto_accept = match['match_type'] in ['PO', 'LC', 'INTERUNIT_LOAN']
             
             if match['match_type'] == 'PO':
                 keywords = match['po']
