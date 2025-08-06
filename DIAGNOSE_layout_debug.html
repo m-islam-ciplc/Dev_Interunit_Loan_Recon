@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Layout Debug Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: #3f1156;
+            color: white;
+            padding: 20px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            background: #f1f3f6;
+            min-height: 100vh;
+        }
+        
+        .test-card {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border: 2px solid red;
+            border-radius: 8px;
+        }
+        
+        .test-text {
+            background: yellow;
+            padding: 10px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3>Sidebar</h3>
+        <p>Fixed sidebar - 250px width</p>
+    </div>
+    
+    <div class="main-content">
+        <h2>Main Content Area</h2>
+        <p>This should start after the sidebar and use full remaining width</p>
+        
+        <div class="test-card">
+            <h4>Test Card 1</h4>
+            <div class="test-text">This text should be fully visible on the left side</div>
+            <div class="test-text">Another line of text to test visibility</div>
+        </div>
+        
+        <div class="test-card">
+            <h4>Test Card 2</h4>
+            <div class="test-text">More test content to check layout</div>
+            <div class="test-text">This should also be fully visible</div>
+        </div>
+        
+        <div class="test-card">
+            <h4>Test Card 3</h4>
+            <div class="test-text">Final test to ensure everything works</div>
+            <div class="test-text">All text should be visible without truncation</div>
+        </div>
+    </div>
+</body>
+</html> 

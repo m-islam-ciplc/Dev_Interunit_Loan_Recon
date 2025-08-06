@@ -1,10 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap');
 
-/* Global styles */
+/* Reset and base styles */
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Ubuntu', 'Segoe UI', sans-serif;
     background-color: #f1f3f6;
     color: #374767;
+    margin: 0;
+    padding: 0;
+    padding-top: 48px;
+    overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label, code {
@@ -21,25 +29,43 @@ code {
     color: #495057;
 }
 
-/* Layout */
-.tab-container-vertical {
-  display: flex;
-  max-width: 1100px;
-  margin: 36px auto;
+/* Override Bootstrap's d-flex behavior */
+.d-flex {
+    display: block !important;
+    position: relative;
 }
 
+/* Fixed sidebar */
+.custom-sidebar {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 250px !important;
+    height: 100vh !important;
+    background: #3f1156 !important;
+    z-index: 1000 !important;
+    overflow-y: auto;
+    border-right: 1px solid #d1e0dd;
+}
+
+/* Main content area */
 .tab-content-vertical {
-  flex: 1;
-  background: #fff;
-  border-radius: 0 6px 6px 0;
-  padding: 24px 32px;
-  min-height: 400px;
+    position: relative !important;
+    margin-left: 250px !important;
+    width: calc(100% - 250px) !important;
+    background: #fff;
+    border-radius: 6px;
+    padding: 24px 32px;
+    min-height: 400px;
+    overflow-x: auto;
 }
 
-.tab-header-vertical, .tab-btn-vertical {
-  display: none !important;
+/* Hide Bootstrap's flex utilities */
+.flex-grow-1 {
+    flex: none !important;
 }
 
+/* Tab pane visibility */
 .tab-pane { 
     display: none; 
 }
@@ -55,12 +81,12 @@ code {
     padding: 24px 32px 18px 32px;
     border-radius: 6px;
     width: 100%;
-    margin-left: 0;
+    margin: 0;
 }
 
 .parser-container-fullwidth {
     width: 100%;
-    margin-left: 0;
+    margin: 0;
 }
 
 .parser-form { 
@@ -98,10 +124,6 @@ code {
     margin-left: 14px;
 }
 
-
-
-
-
 .file-chosen {
     background: #fff;
     border: 1px solid #ccc;
@@ -114,15 +136,7 @@ code {
     display: inline-block;
 }
 
-/* Custom sidebar */
-.custom-sidebar {
-    background: #3f1156;
-    min-width: 250px;
-    max-width: 250px;
-    min-height: 100vh;
-    border-right: 1px solid #d1e0dd;
-}
-
+/* Menu styles */
 .menu-item {
     color: #fff;
     background: #15302e;
@@ -206,20 +220,23 @@ code {
     background: #15302e;
     border-bottom: 1px solid #e1e6ef;
     height: 48px;
-    width: 100%;
+    width: calc(100% - 250px);
+    margin-left: 250px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 999;
     display: flex;
     align-items: center;
+    padding: 0 20px;
 }
 
 .topbar-title {
     color: #fff;
-    font-size: 1.25rem;
+    font-size: 18px;
     font-weight: 600;
-    padding-left: 24px;
-    letter-spacing: 0.5px;
+    margin: 0;
 }
-
-
 
 /* Headings */
 h1, h2, h3, h4, h5, h6 {
@@ -273,8 +290,6 @@ h6 {
 .form-label {
     font-size: 14px !important;
 }
-
-
 
 /* Transaction tables */
 .matched-transactions-wrapper,
@@ -422,8 +437,6 @@ td[data-column="actions"] .btn {
 td[data-column="actions"] .btn:last-child {
     margin-right: 0 !important;
 }
-
-
 
 /* Badge styles */
 .badge {
