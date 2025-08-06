@@ -548,3 +548,222 @@ td[data-column="actions"] .btn:last-child {
     background-color: #0096ff !important;
     color: #fff !important;
 } 
+
+/* Ocean Theme Button Styles - Colors Only */
+.btn-primary {
+    background: linear-gradient(135deg, #0096ff, #00bcd4) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(0, 150, 255, 0.3) !important;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #00bfff, #00bcd4) !important;
+    box-shadow: 0 4px 12px rgba(0, 191, 255, 0.4) !important;
+    transform: translateY(-1px) !important;
+}
+
+.btn-secondary {
+    background: rgba(0, 150, 255, 0.1) !important;
+    border: 1px solid #0096ff !important;
+    color: #0096ff !important;
+}
+
+.btn-secondary:hover {
+    background: rgba(0, 191, 255, 0.2) !important;
+    border-color: #00bfff !important;
+    color: #00bfff !important;
+}
+
+.btn-success {
+    background: #00bcd4 !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.3) !important;
+}
+
+.btn-warning {
+    background: #ff9800 !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3) !important;
+}
+
+.btn-danger {
+    background: #e74c3c !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+}
+
+.btn-info {
+    background: #17a2b8 !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3) !important;
+}
+
+.btn-light {
+    background: #f8f9fa !important;
+    border: 1px solid #dee2e6 !important;
+    color: #495057 !important;
+}
+
+.btn-dark {
+    background: #343a40 !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(52, 58, 64, 0.3) !important;
+}
+
+/* Outline buttons */
+.btn-outline-primary {
+    color: #0096ff !important;
+    border-color: #0096ff !important;
+    background: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background: #0096ff !important;
+    color: white !important;
+}
+
+.btn-outline-secondary {
+    color: #6c757d !important;
+    border-color: #6c757d !important;
+    background: transparent !important;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d !important;
+    color: white !important;
+}
+
+.btn-outline-success {
+    color: #00bcd4 !important;
+    border-color: #00bcd4 !important;
+    background: transparent !important;
+}
+
+.btn-outline-success:hover {
+    background: #00bcd4 !important;
+    color: white !important;
+}
+
+.btn-outline-warning {
+    color: #ff9800 !important;
+    border-color: #ff9800 !important;
+    background: transparent !important;
+}
+
+.btn-outline-warning:hover {
+    background: #ff9800 !important;
+    color: white !important;
+}
+
+.btn-outline-danger {
+    color: #e74c3c !important;
+    border-color: #e74c3c !important;
+    background: transparent !important;
+}
+
+.btn-outline-danger:hover {
+    background: #e74c3c !important;
+    color: white !important;
+}
+
+.btn-outline-info {
+    color: #17a2b8 !important;
+    border-color: #17a2b8 !important;
+    background: transparent !important;
+}
+
+.btn-outline-info:hover {
+    background: #17a2b8 !important;
+    color: white !important;
+}
+
+/* Link buttons */
+.btn-link {
+    color: #0096ff !important;
+    text-decoration: none !important;
+}
+
+.btn-link:hover {
+    color: #00bfff !important;
+    text-decoration: underline !important;
+}
+
+/* Ocean Theme Card Styles - Colors Only */
+.card {
+    border: 1px solid rgba(0, 150, 255, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 150, 255, 0.1) !important;
+}
+
+.card-header {
+    background: linear-gradient(135deg, rgba(0, 150, 255, 0.1), rgba(0, 188, 212, 0.1)) !important;
+    border-bottom: 1px solid rgba(0, 150, 255, 0.2) !important;
+    color: #001f3f !important;
+}
+
+/* Ocean Theme Form Styles - Colors Only */
+.form-control:focus {
+    border-color: #0096ff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 150, 255, 0.25) !important;
+}
+
+.form-select:focus {
+    border-color: #0096ff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 150, 255, 0.25) !important;
+}
+
+/* Ocean Theme Alert Styles - Colors Only */
+.alert-info {
+    background: rgba(0, 150, 255, 0.1) !important;
+    border: 1px solid rgba(0, 150, 255, 0.3) !important;
+    color: #001f3f !important;
+}
+
+/* Ocean Theme Table Header - Colors Only */
+.table thead th {
+    background: linear-gradient(135deg, rgba(0, 150, 255, 0.1), rgba(0, 188, 212, 0.1)) !important;
+    border-bottom: 1px solid rgba(0, 150, 255, 0.2) !important;
+    color: #001f3f !important;
+} 
+
+/* Ocean Theme for File Upload Buttons - Colors Only */
+.btn-sm.btn-outline-primary {
+    color: #0096ff !important;
+    border-color: #0096ff !important;
+    background: transparent !important;
+}
+
+.btn-sm.btn-outline-primary:hover {
+    background: #0096ff !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(0, 150, 255, 0.3) !important;
+}
+
+.btn-sm.btn-secondary {
+    background: rgba(0, 150, 255, 0.1) !important;
+    border: 1px solid #0096ff !important;
+    color: #0096ff !important;
+}
+
+.btn-sm.btn-secondary:hover {
+    background: rgba(0, 191, 255, 0.2) !important;
+    border-color: #00bfff !important;
+    color: #00bfff !important;
+}
+
+.btn-sm.btn-outline-danger {
+    color: #e74c3c !important;
+    border-color: #e74c3c !important;
+    background: transparent !important;
+}
+
+.btn-sm.btn-outline-danger:hover {
+    background: #e74c3c !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+} 
