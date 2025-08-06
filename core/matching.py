@@ -365,11 +365,22 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 lender_particulars = lender.get('Particulars', '')
                 borrower_particulars = borrower.get('Particulars', '')
                 
-                # Check for interunit loan keywords
-                is_lender_interunit = ('amount paid as interunit loan' in lender_particulars.lower() or 
-                                     'interunit fund transfer' in lender_particulars.lower())
-                is_borrower_interunit = ('amount received as interunit loan' in borrower_particulars.lower() or 
-                                       'interunit fund transfer' in borrower_particulars.lower())
+                # Check for interunit loan keywords (more flexible matching)
+                lender_lower = lender_particulars.lower()
+                borrower_lower = borrower_particulars.lower()
+                
+                is_lender_interunit = (
+                    'amount paid as interunit loan' in lender_lower or 
+                    'interunit fund transfer' in lender_lower or
+                    'inter unit fund transfer' in lender_lower or
+                    'interunit loan' in lender_lower
+                )
+                is_borrower_interunit = (
+                    'amount received as interunit loan' in borrower_lower or 
+                    'interunit fund transfer' in borrower_lower or
+                    'inter unit fund transfer' in borrower_lower or
+                    'interunit loan' in borrower_lower
+                )
                 
                 if (is_lender_interunit and is_borrower_interunit):
                     # Extract account numbers from both narrations using multiple patterns

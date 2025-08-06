@@ -1085,8 +1085,8 @@ function generateActionButtons(match) {
         console.warn('Could not parse audit_info:', match.audit_info);
     }
     
-    // Check if this match is auto-accepted (PO or LC)
-    const isAutoAccepted = ['PO', 'LC'].includes(matchType);
+    // Check if this match is auto-accepted (PO, LC, or INTERUNIT_LOAN)
+    const isAutoAccepted = ['PO', 'LC', 'INTERUNIT_LOAN'].includes(matchType);
     
     // If auto-accepted, show a badge instead of action buttons
     if (isAutoAccepted) {
