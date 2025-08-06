@@ -169,54 +169,84 @@ def update_matches(matches):
             auto_accept = match['match_type'] in ['PO', 'LC', 'INTERUNIT_LOAN']
             
             if match['match_type'] == 'PO':
-                keywords = match['po']
                 match_method = 'exact'
             elif match['match_type'] == 'LC':
-                keywords = match['lc']
                 match_method = 'exact'
             elif match['match_type'] == 'LOAN_ID':
-                keywords = match['loan_id']
                 match_method = 'exact'
             elif match['match_type'] == 'SALARY':
                 # For salary matches, use the audit trail
-                keywords = f"person:{match['person']},period:{match['period']}"
                 match_method = match['audit_trail']['match_method']
                 jaccard_score = match['audit_trail'].get('jaccard_score', 0)
             elif match['match_type'] == 'COMMON_TEXT':
                 # For COMMON_TEXT matches, use the actual matching text and store in all relevant fields
                 common_text = match.get('common_text', '')
-                keywords = common_text
                 match_method = 'jaccard'
             elif match['match_type'] == 'INTERUNIT_LOAN':
                 # For INTERUNIT_LOAN matches, extract keywords from audit trail
-                if 'audit_trail' in match and 'keywords' in match['audit_trail']:
-                    keywords_dict = match['audit_trail']['keywords']
-                    keywords = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
-                else:
-                    keywords = 'Interunit loan keywords'
                 match_method = 'cross_reference'
             else:
-                keywords = ''
                 match_method = ''
 
             # Store audit information as JSON
             audit_info = {
                 'match_type': match['match_type'],
                 'match_method': match_method,
-                'keywords': keywords,
                 'matched_text': None
             }
+            
+            # Prepare keywords for database storage
+            keywords = ''
+            if match['match_type'] == 'PO':
+                keywords = match.get('po', '')
+            elif match['match_type'] == 'LC':
+                keywords = match.get('lc', '')
+            elif match['match_type'] == 'LOAN_ID':
+                keywords = match.get('loan_id', '')
+            elif match['match_type'] == 'SALARY':
+                keywords = f"person:{match.get('person', '')},period:{match.get('period', '')}"
+            elif match['match_type'] == 'COMMON_TEXT':
+                keywords = match.get('common_text', '')
+            elif match['match_type'] == 'INTERUNIT_LOAN':
+                if 'audit_trail' in match and 'keywords' in match['audit_trail']:
+                    keywords_dict = match['audit_trail']['keywords']
+                    keywords = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
+                else:
+                    keywords = 'Interunit loan keywords'
 
             # Add match-specific details to audit trail
-            if match['match_type'] == 'COMMON_TEXT':
-                # Always store the actual common text in all relevant fields for audit
+            if match['match_type'] == 'PO':
+                # Store PO specific audit information
+                audit_info['po_number'] = match.get('po', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+            elif match['match_type'] == 'LC':
+                # Store LC specific audit information
+                audit_info['lc_number'] = match.get('lc', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+            elif match['match_type'] == 'LOAN_ID':
+                # Store LOAN_ID specific audit information
+                audit_info['loan_id'] = match.get('loan_id', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+            elif match['match_type'] == 'SALARY':
+                # Store SALARY specific audit information
+                audit_info['person'] = match.get('person', '')
+                audit_info['period'] = match.get('period', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+                if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
+                    audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
+            elif match['match_type'] == 'COMMON_TEXT':
+                # Store COMMON_TEXT specific audit information
                 audit_info['common_text'] = common_text
                 audit_info['matched_text'] = common_text
                 audit_info['matched_phrase'] = common_text
-                audit_info['keywords'] = common_text
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
                 if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                     audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
-                # print(f"DEBUG: Writing COMMON_TEXT audit_info for {match.get('lender_uid')} and {match.get('borrower_uid')}: {audit_info}")
             elif match['match_type'] == 'INTERUNIT_LOAN':
                 # Store INTERUNIT_LOAN specific audit information
                 if 'audit_trail' in match:
@@ -255,7 +285,6 @@ def update_matches(matches):
                 UPDATE tally_data 
                 SET matched_with = :matched_with, 
                     match_status = :match_status, 
-                    keywords = :keywords,
                     match_method = :match_method,
                     audit_info = :audit_info,
                     date_matched = NOW()
@@ -263,7 +292,6 @@ def update_matches(matches):
             """), {
                 'matched_with': match['lender_uid'],
                 'match_status': match_status,
-                'keywords': keywords,
                 'match_method': match_method,
                 'audit_info': audit_json,
                 'borrower_uid': match['borrower_uid']
@@ -274,7 +302,6 @@ def update_matches(matches):
                 UPDATE tally_data 
                 SET matched_with = :matched_with, 
                     match_status = :match_status, 
-                    keywords = :keywords,
                     match_method = :match_method,
                     audit_info = :audit_info,
                     date_matched = NOW()
@@ -282,7 +309,6 @@ def update_matches(matches):
             """), {
                 'matched_with': match['borrower_uid'],
                 'match_status': match_status,
-                'keywords': keywords,
                 'match_method': match_method,
                 'audit_info': audit_json,
                 'lender_uid': match['lender_uid']
@@ -316,7 +342,6 @@ def get_matched_data():
                 t2.Date as matched_date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords,
                 t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type,
                 t2.role as matched_role,
@@ -354,8 +379,7 @@ def update_match_status(uid, status, confirmed_by=None):
                     sql_reset_main = """
                     UPDATE tally_data 
                     SET match_status = 'unmatched', 
-                        matched_with = NULL,
-                        keywords = NULL
+                        matched_with = NULL
                     WHERE uid = :uid
                     """
                     conn.execute(text(sql_reset_main), {'uid': uid})
@@ -364,8 +388,7 @@ def update_match_status(uid, status, confirmed_by=None):
                     sql_reset_matched = """
                     UPDATE tally_data 
                     SET match_status = 'unmatched', 
-                        matched_with = NULL,
-                        keywords = NULL
+                        matched_with = NULL
                     WHERE uid = :matched_with_uid
                     """
                     conn.execute(text(sql_reset_matched), {'matched_with_uid': matched_with_uid})
@@ -375,8 +398,7 @@ def update_match_status(uid, status, confirmed_by=None):
                     sql_reset_main = """
                     UPDATE tally_data 
                     SET match_status = 'unmatched', 
-                        matched_with = NULL,
-                        keywords = NULL
+                        matched_with = NULL
                     WHERE uid = :uid
                     """
                     conn.execute(text(sql_reset_main), {'uid': uid})
@@ -447,7 +469,7 @@ def get_pending_matches():
                 t1.*, t2.lender as matched_lender, t2.borrower as matched_borrower,
                t2.Particulars as matched_particulars, t2.Date as matched_date,
                 t2.Debit as matched_Debit, t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords, t2.uid as matched_uid,
+                t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
         FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
@@ -474,7 +496,7 @@ def get_confirmed_matches():
                 t1.*, t2.lender as matched_lender, t2.borrower as matched_borrower,
                t2.Particulars as matched_particulars, t2.Date as matched_date,
                 t2.Debit as matched_Debit, t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords, t2.uid as matched_uid,
+                t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
         FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
@@ -497,8 +519,7 @@ def reset_match_status():
             reset_query = text("""
                 UPDATE tally_data 
                 SET match_status = NULL, 
-                    matched_with = NULL, 
-                    keywords = NULL
+                    matched_with = NULL
             """)
             conn.execute(reset_query)
             conn.commit()
@@ -515,7 +536,6 @@ def reset_match_status_for_companies(lender_company, borrower_company, month=Non
                 UPDATE tally_data 
                 SET match_status = 'unmatched', 
                     matched_with = NULL,
-                    keywords = NULL,
                     match_method = NULL,
                     audit_info = NULL,
                     date_matched = NULL
@@ -875,7 +895,6 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
                 t2.Date as matched_date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords,
                 t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type,
                 t2.role as matched_role
@@ -1106,7 +1125,6 @@ def reset_all_matches():
                 UPDATE tally_data 
                 SET match_status = NULL,
                     matched_with = NULL,
-                    keywords = NULL,
                     match_method = NULL,
                     audit_info = NULL,
                     date_matched = NULL

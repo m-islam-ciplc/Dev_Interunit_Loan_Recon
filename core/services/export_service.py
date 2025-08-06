@@ -133,7 +133,6 @@ class ExportService:
             export_row = {
                 **lender_record,
                 **borrower_record,
-                'Match_Keywords': row.get('keywords', ''),
                 'Match_Method': row.get('match_method', ''),
                 'Audit_Info': self._format_audit_info(row.get('audit_info', ''))
             }
@@ -199,12 +198,69 @@ class ExportService:
         try:
             import json
             info = json.loads(audit_info) if isinstance(audit_info, str) else audit_info
-            formatted = f"Match Type: {info.get('match_type', 'Unknown')}\n"
+            match_type = info.get('match_type', 'Unknown')
+            
+            formatted = f"Match Type: {match_type}\n"
             formatted += f"Method: {info.get('match_method', 'Unknown')}\n"
-            if info.get('keywords'):
-                formatted += f"Keywords: {info['keywords']}\n"
-            if info.get('jaccard_score'):
-                formatted += f"Similarity: {(info['jaccard_score'] * 100):.1f}%"
+            
+            # Format based on match type
+            if match_type == 'INTERUNIT_LOAN':
+                if info.get('lender_reference'):
+                    formatted += f"Lender: {info['lender_reference']}\n"
+                if info.get('borrower_reference'):
+                    formatted += f"Borrower: {info['borrower_reference']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+            elif match_type == 'PO':
+                if info.get('po_number'):
+                    formatted += f"PO Number: {info['po_number']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+            elif match_type == 'LC':
+                if info.get('lc_number'):
+                    formatted += f"LC Number: {info['lc_number']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+            elif match_type == 'LOAN_ID':
+                if info.get('loan_id'):
+                    formatted += f"Loan ID: {info['loan_id']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+            elif match_type == 'SALARY':
+                if info.get('person'):
+                    formatted += f"Person: {info['person']}\n"
+                if info.get('period'):
+                    formatted += f"Period: {info['period']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+                if info.get('jaccard_score'):
+                    formatted += f"Similarity: {(info['jaccard_score'] * 100):.1f}%\n"
+            elif match_type == 'COMMON_TEXT':
+                if info.get('common_text'):
+                    formatted += f"Matched Text: {info['common_text']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+                if info.get('jaccard_score'):
+                    formatted += f"Similarity: {(info['jaccard_score'] * 100):.1f}%\n"
+            else:
+                # Generic fallback for other match types
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+            
             return formatted.strip()
         except:
             return str(audit_info)

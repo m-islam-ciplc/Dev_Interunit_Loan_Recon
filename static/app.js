@@ -695,28 +695,71 @@ function formatAuditInfo(auditInfoStr) {
         // Format match type and details based on type
         switch(auditInfo.match_type) {
             case 'PO':
-                formattedInfo += `PO Match\nPO Number: ${auditInfo.keywords}\n`;
+                formattedInfo += `PO Match\n`;
+                if (auditInfo.po_number) {
+                    formattedInfo += `PO Number: ${auditInfo.po_number}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 break;
             case 'LC':
-                formattedInfo += `LC Match\nLC Number: ${auditInfo.keywords}\n`;
+                formattedInfo += `LC Match\n`;
+                if (auditInfo.lc_number) {
+                    formattedInfo += `LC Number: ${auditInfo.lc_number}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 break;
             case 'LOAN_ID':
-                formattedInfo += `Loan ID Match\nLoan ID: ${auditInfo.keywords}\n`;
+                formattedInfo += `Loan ID Match\n`;
+                if (auditInfo.loan_id) {
+                    formattedInfo += `Loan ID: ${auditInfo.loan_id}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 break;
             case 'SALARY':
-                formattedInfo += `Salary Match\nDetails: ${auditInfo.keywords}\n`;
+                formattedInfo += `Salary Match\n`;
+                if (auditInfo.person) {
+                    formattedInfo += `Person: ${auditInfo.person}\n`;
+                }
+                if (auditInfo.period) {
+                    formattedInfo += `Period: ${auditInfo.period}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 if (auditInfo.jaccard_score !== undefined) {
                     formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
                 }
                 break;
             case 'COMMON_TEXT':
+                formattedInfo += `Common Text Match\n`;
                 // Get the actual matched text from any field that might have it
-                const matchedText = auditInfo.keywords || auditInfo.common_text || auditInfo.matched_text || auditInfo.matched_phrase || '';
+                const matchedText = auditInfo.common_text || auditInfo.matched_text || auditInfo.matched_phrase || auditInfo.keywords || '';
                 if (matchedText) {
-                    formattedInfo += `MATCHED TEXT: "${matchedText}"\n`;
-                    formattedInfo += `(Common Text Match)\n`;
-                } else {
-                    formattedInfo += 'Common Text Match (no text found)\n';
+                    formattedInfo += `Matched Text: "${matchedText}"\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
                 }
                 if (auditInfo.jaccard_score !== undefined) {
                     formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
@@ -738,7 +781,16 @@ function formatAuditInfo(auditInfoStr) {
                 }
                 break;
             default:
-                formattedInfo += `Type: ${auditInfo.match_type}\nKeywords: ${auditInfo.keywords}\n`;
+                formattedInfo += `Type: ${auditInfo.match_type}\n`;
+                if (auditInfo.keywords) {
+                    formattedInfo += `Keywords: ${auditInfo.keywords}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
         }
         
         return formattedInfo.trim().replace(/^\n+/, '');
@@ -847,7 +899,6 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                             <th data-column="borrower_vch_type">Borrower Vch Type</th>
                             <th data-column="borrower_role">Borrower Role</th>
                             <!-- Match Details Columns -->
-                            <th data-column="keywords">Keywords</th>
                             <th data-column="match_method">Match Method</th>
                             <th data-column="audit_info">Audit Info</th>
                             <th data-column="actions">Actions</th>
@@ -982,6 +1033,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <td data-column="borrower_vch_type">${borrowerRecord.Vch_Type || ''}</td>
                 <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
+                <td data-column="match_method">${match.match_method || ''}</td>
                 <td data-column="audit_info">
                     <div class="audit-info-text">${(formatAuditInfo(match.audit_info) || '').replace(/\n/g, '<br>')}</div>
                 </td>
