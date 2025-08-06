@@ -278,12 +278,8 @@ h6 {
     font-size: 14px !important;
 }
 
-/* Recent uploads */
+/* Recent uploads - now using same design as Reconciliation History */
 #recent-uploads-list {
-    font-size: 14px !important;
-}
-
-#recent-uploads-list * {
     font-size: 14px !important;
 }
 

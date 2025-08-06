@@ -1287,12 +1287,20 @@ async function loadRecentUploads() {
         const result = await response.json();
         const container = document.getElementById('recent-uploads-list');
         if (response.ok && result.recent_uploads && result.recent_uploads.length > 0) {
-            let html = '<div class="recent-uploads-heading">Recent uploads</div>';
-            html += '<ul class="recent-uploads-ul">';
-            result.recent_uploads.forEach(f => {
-                html += `<li class="recent-upload-item">${f}</li>`;
+            let html = '<div class="upload-history">';
+            html += '<h6 class="mb-3"><i class="bi bi-clock-history me-2"></i>File Upload History</h6>';
+            
+            // Display uploads in reverse chronological order (newest first)
+            result.recent_uploads.slice().reverse().forEach((upload, index) => {
+                html += '<div class="alert alert-success mb-2" role="alert">';
+                html += '<div class="d-flex align-items-center">';
+                html += '<i class="bi bi-file-earmark-arrow-up me-2"></i>';
+                html += '<strong>File:</strong> ' + upload;
+                html += '</div>';
+                html += '</div>';
             });
-            html += '</ul>';
+            
+            html += '</div>';
             container.innerHTML = html;
         } else {
             container.innerHTML = '';
@@ -1300,7 +1308,7 @@ async function loadRecentUploads() {
     } catch (error) {
         document.getElementById('recent-uploads-list').innerHTML = '';
     }
-} 
+}
 
 // Add Clear File List button handler
 async function clearRecentUploads() {
@@ -1312,7 +1320,25 @@ async function clearRecentUploads() {
     } catch (error) {
         // Ignore
     }
-} 
+}
+
+// Function to remove a specific upload from history
+async function removeUploadFromHistory(index) {
+    try {
+        const response = await fetch('/api/remove-upload-from-history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ index: index })
+        });
+        if (response.ok) {
+            loadRecentUploads();
+        }
+    } catch (error) {
+        // Ignore
+    }
+}
 
 // Load detected company pairs
 async function loadDetectedPairs() {
