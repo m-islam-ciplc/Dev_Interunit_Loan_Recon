@@ -12,7 +12,7 @@ body {
     margin: 0;
     padding: 0;
     padding-top: 48px;
-    overflow-x: hidden;
+    overflow-x: auto;
 }
 
 h1, h2, h3, h4, h5, h6, p, span, div, button, input, select, textarea, label, code {
@@ -31,8 +31,9 @@ code {
 
 /* Override Bootstrap's d-flex behavior */
 .d-flex {
-    display: block !important;
+    display: flex !important;
     position: relative;
+    width: 100%;
 }
 
 /* Fixed sidebar */
@@ -50,19 +51,18 @@ code {
 
 /* Main content area */
 .tab-content-vertical {
-    position: relative !important;
+    flex: 1 !important;
     margin-left: 250px !important;
-    width: calc(100% - 250px) !important;
     background: #fff;
     border-radius: 6px;
     padding: 24px 32px;
     min-height: 400px;
-    overflow-x: auto;
+    overflow-x: visible;
 }
 
-/* Hide Bootstrap's flex utilities */
+/* Allow Bootstrap's flex utilities */
 .flex-grow-1 {
-    flex: none !important;
+    flex: 1 !important;
 }
 
 /* Tab pane visibility */
@@ -295,12 +295,12 @@ h6 {
 .matched-transactions-wrapper,
 .unmatched-transactions-wrapper {
     width: 100%;
-    overflow-x: auto;
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     border: 1px solid #e1e6ef;
     margin-bottom: 18px;
+    overflow-x: visible;
 }
 
 /* Dynamic table heading rows */
