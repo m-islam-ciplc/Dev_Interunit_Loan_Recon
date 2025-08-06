@@ -478,9 +478,9 @@ td[data-column="borrower_particulars"] {
     word-break: break-word !important;
 }
 
-/* Audit info column - wider for detailed information */
+/* Audit info column - wider with text wrapping */
 td[data-column="audit_info"] {
-    min-width: 175px !important;
+    min-width: 150px !important;
     white-space: normal !important;
     word-wrap: break-word !important;
     word-break: break-word !important;
@@ -497,6 +497,7 @@ td[data-column="audit_info"] {
 td[data-column="actions"] {
     vertical-align: top !important;
     padding-top: 4px !important;
+    text-align: center !important;
 }
 
 /* Ensure action buttons match table font and have square shape */

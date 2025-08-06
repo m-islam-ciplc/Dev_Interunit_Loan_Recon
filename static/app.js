@@ -1151,7 +1151,7 @@ function generateActionButtons(match) {
         return `
             <div class="d-flex justify-content-center align-items-center">
                 <span class="badge bg-success text-white px-3 py-2" style="font-size: 10px;">
-                    <i class="bi bi-check-circle me-1"></i>Auto-Confirmed
+                    <i class="bi bi-check-circle me-1"></i>Auto-Match
                 </span>
             </div>
         `;
