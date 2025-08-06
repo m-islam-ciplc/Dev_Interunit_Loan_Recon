@@ -303,6 +303,8 @@ h6 {
     overflow-x: visible;
 }
 
+
+
 /* Dynamic table heading rows */
 .matched-header {
     background-color: #d4edda;
@@ -335,7 +337,6 @@ h6 {
     font-size: 10px;
     font-family: 'Ubuntu', 'Segoe UI', sans-serif;
     padding: 4px 4px;
-    white-space: normal;
     overflow: visible;
     vertical-align: top !important;
 }
@@ -366,7 +367,6 @@ h6 {
 .matched-transactions-table td, 
 .unmatched-transactions-table td {
     vertical-align: top !important;
-    white-space: normal !important;
     padding: 4px 4px;
     line-height: 1.3;
 }
@@ -383,23 +383,107 @@ h6 {
     line-height: 1.2 !important;
 }
 
-/* Particulars column */
-td[data-column="particulars"],
-td[data-column="lender_particulars"],
-td[data-column="borrower_particulars"],
-.particulars-cell,
-.table-cell-large {
-    width: auto !important;
-    max-width: 600px !important;
-    min-width: 300px !important;
-    white-space: pre-wrap !important;
-    vertical-align: top !important;
-    word-break: break-word;
-}
-
 /* Amount cells */
 .amount-cell {
     text-align: right !important;
+}
+
+/* Date cells - ensure adequate width to prevent wrapping */
+.input-date-cell,
+.date-cell {
+    white-space: nowrap !important;
+}
+
+/* Voucher Type cells - prevent wrapping */
+.vch-type-cell {
+    white-space: nowrap !important;
+}
+
+/* Universal table column rules - applies to ALL tables */
+/* All columns with uniform minimum width */
+td[data-column="input_date"],
+td[data-column="date"],
+td[data-column="lender_date"],
+td[data-column="borrower_date"],
+td[data-column="vch_type"],
+td[data-column="lender_vch_type"],
+td[data-column="borrower_vch_type"],
+td[data-column="vch_no"],
+td[data-column="debit"],
+td[data-column="credit"],
+td[data-column="amount"],
+td[data-column="lender_debit"],
+td[data-column="borrower_credit"],
+td[data-column="uid"],
+td[data-column="id"],
+td[data-column="lender_uid"],
+td[data-column="borrower_uid"],
+td[data-column="lender"],
+td[data-column="borrower"],
+td[data-column="company"],
+td[data-column="statement_month"],
+td[data-column="statement_year"],
+td[data-column="role"],
+td[data-column="lender_role"],
+td[data-column="borrower_role"],
+td[data-column="entered_by"],
+td[data-column="match_method"],
+td[data-column="audit_info"],
+td[data-column="date_matched"],
+td[data-column="dr_cr"],
+td[data-column="keywords_delete"],
+td[data-column="match_status"],
+td[data-column="matched_with"],
+td[data-column="pair_id"],
+td[data-column="upload_date"],
+td[data-column="record_count"],
+td[data-column="particulars"],
+td[data-column="lender_particulars"],
+td[data-column="borrower_particulars"],
+.input-date-cell,
+.date-cell,
+.vch-type-cell,
+.vch-no-cell,
+.amount-cell,
+.uid-cell,
+.lender-cell,
+.borrower-cell,
+.statement-month-cell,
+.statement-year-cell,
+.role-cell,
+.entered-by-cell {
+    min-width: 80px !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+    vertical-align: top !important;
+}
+
+/* Amount columns - override text alignment */
+td[data-column="debit"],
+td[data-column="credit"],
+td[data-column="amount"],
+td[data-column="lender_debit"],
+td[data-column="borrower_credit"],
+.amount-cell {
+    text-align: right !important;
+}
+
+/* Particulars column - wider with text wrapping */
+td[data-column="particulars"],
+td[data-column="lender_particulars"],
+td[data-column="borrower_particulars"] {
+    min-width: 250px !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+}
+
+/* Audit info column - wider for detailed information */
+td[data-column="audit_info"] {
+    min-width: 175px !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
 }
 
 /* Clean audit info styling - inherits from general table cell rules */

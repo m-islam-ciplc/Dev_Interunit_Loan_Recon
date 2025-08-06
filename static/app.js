@@ -236,7 +236,37 @@ function displayData(data, columnOrder) {
             <table class="table matched-transactions-table">
                 <thead>
                     <tr>
-                        ${columns.map(col => `<th>${col}</th>`).join('')}
+                        ${columns.map(col => {
+                            // Map column names to data-column attributes and CSS classes
+                            const columnMapping = {
+                                'UID': { attr: 'uid', class: 'uid-cell' },
+                                'uid': { attr: 'uid', class: 'uid-cell' },
+                                'Lender': { attr: 'lender', class: 'lender-cell' },
+                                'lender': { attr: 'lender', class: 'lender-cell' },
+                                'Borrower': { attr: 'borrower', class: 'borrower-cell' },
+                                'borrower': { attr: 'borrower', class: 'borrower-cell' },
+                                'Date': { attr: 'date', class: 'date-cell' },
+                                'date': { attr: 'date', class: 'date-cell' },
+                                'Particulars': { attr: 'particulars', class: 'particulars-cell' },
+                                'particulars': { attr: 'particulars', class: 'particulars-cell' },
+                                'Vch_Type': { attr: 'vch_type', class: 'vch-type-cell' },
+                                'vch_type': { attr: 'vch_type', class: 'vch-type-cell' },
+                                'Vch_No': { attr: 'vch_no', class: 'vch-no-cell' },
+                                'vch_no': { attr: 'vch_no', class: 'vch-no-cell' },
+                                'Debit': { attr: 'debit', class: 'amount-cell' },
+                                'debit': { attr: 'debit', class: 'amount-cell' },
+                                'Credit': { attr: 'credit', class: 'amount-cell' },
+                                'credit': { attr: 'credit', class: 'amount-cell' },
+                                'entered_by': { attr: 'entered_by', class: 'entered-by-cell' },
+                                'input_date': { attr: 'input_date', class: 'input-date-cell' },
+                                'role': { attr: 'role', class: 'role-cell' },
+                                'statement_month': { attr: 'statement_month', class: 'statement-month-cell' },
+                                'statement_year': { attr: 'statement_year', class: 'statement-year-cell' }
+                            };
+                            
+                            const mapping = columnMapping[col] || { attr: col.toLowerCase(), class: '' };
+                            return `<th data-column="${mapping.attr}" class="${mapping.class} text-center">${col}</th>`;
+                        }).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -255,15 +285,43 @@ function displayData(data, columnOrder) {
                             value = formatDate(value);
                         }
                     }
-                    return `<td>${value}</td>`;
+                    
+                    // Map column names to data-column attributes and CSS classes
+                    const columnMapping = {
+                        'UID': { attr: 'uid', class: 'uid-cell' },
+                        'uid': { attr: 'uid', class: 'uid-cell' },
+                        'Lender': { attr: 'lender', class: 'lender-cell' },
+                        'lender': { attr: 'lender', class: 'lender-cell' },
+                        'Borrower': { attr: 'borrower', class: 'borrower-cell' },
+                        'borrower': { attr: 'borrower', class: 'borrower-cell' },
+                        'Date': { attr: 'date', class: 'date-cell' },
+                        'date': { attr: 'date', class: 'date-cell' },
+                        'Particulars': { attr: 'particulars', class: 'particulars-cell' },
+                        'particulars': { attr: 'particulars', class: 'particulars-cell' },
+                        'Vch_Type': { attr: 'vch_type', class: 'vch-type-cell' },
+                        'vch_type': { attr: 'vch_type', class: 'vch-type-cell' },
+                        'Vch_No': { attr: 'vch_no', class: 'vch-no-cell' },
+                        'vch_no': { attr: 'vch_no', class: 'vch-no-cell' },
+                        'Debit': { attr: 'debit', class: 'amount-cell text-end' },
+                        'debit': { attr: 'debit', class: 'amount-cell text-end' },
+                        'Credit': { attr: 'credit', class: 'amount-cell text-end' },
+                        'credit': { attr: 'credit', class: 'amount-cell text-end' },
+                        'entered_by': { attr: 'entered_by', class: 'entered-by-cell' },
+                        'input_date': { attr: 'input_date', class: 'input-date-cell' },
+                        'role': { attr: 'role', class: 'role-cell' },
+                        'statement_month': { attr: 'statement_month', class: 'statement-month-cell' },
+                        'statement_year': { attr: 'statement_year', class: 'statement-year-cell' }
+                    };
+                    
+                    const mapping = columnMapping[col] || { attr: col.toLowerCase(), class: '' };
+                    return `<td data-column="${mapping.attr}" class="${mapping.class}">${value}</td>`;
                 }).join('')}
             </tr>
         `;
     });
     
     tableHTML += `
-                </tbody>
-            </table>
+            </div>
         </div>
         <div class="alert alert-light mt-2">
             <i class="bi bi-info-circle me-2"></i>Total records: ${data.length}
@@ -1391,10 +1449,10 @@ function displayPairs(pairs) {
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th class="text-center">Pair ID</th>
-                        <th class="text-center">Upload Date</th>
-                        <th class="text-center">Records</th>
-                        <th class="text-center">Actions</th>
+                        <th data-column="pair_id" class="uid-cell text-center">Pair ID</th>
+                        <th data-column="upload_date" class="date-cell text-center">Upload Date</th>
+                        <th data-column="record_count" class="amount-cell text-center">Records</th>
+                        <th data-column="actions" class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1405,10 +1463,10 @@ function displayPairs(pairs) {
         
         tableHTML += `
             <tr>
-                <td class="text-center"><code>${pair.pair_id}</code></td>
-                <td class="text-center">${uploadDate}</td>
-                <td class="text-center"><span class="badge bg-info">${pair.record_count}</span></td>
-                <td class="text-center">
+                <td data-column="pair_id" class="uid-cell"><code>${pair.pair_id}</code></td>
+                <td data-column="upload_date" class="date-cell">${uploadDate}</td>
+                <td data-column="record_count" class="amount-cell"><span class="badge bg-info">${pair.record_count}</span></td>
+                <td data-column="actions">
                     <a href="#" onclick="viewPairData('${pair.pair_id}')" class="text-primary text-decoration-none">
                         <i class="bi bi-eye"></i> View
                     </a>
