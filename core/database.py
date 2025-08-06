@@ -169,24 +169,24 @@ def update_matches(matches):
             auto_accept = match['match_type'] in ['PO', 'LC', 'INTERUNIT_LOAN']
             
             if match['match_type'] == 'PO':
-                match_method = 'exact'
+                match_method = 'reference_match'
             elif match['match_type'] == 'LC':
-                match_method = 'exact'
+                match_method = 'reference_match'
             elif match['match_type'] == 'LOAN_ID':
-                match_method = 'exact'
+                match_method = 'reference_match'
             elif match['match_type'] == 'SALARY':
                 # For salary matches, use the audit trail
-                match_method = match['audit_trail']['match_method']
+                match_method = 'similarity_match'
                 jaccard_score = match['audit_trail'].get('jaccard_score', 0)
             elif match['match_type'] == 'COMMON_TEXT':
                 # For COMMON_TEXT matches, use the actual matching text and store in all relevant fields
                 common_text = match.get('common_text', '')
-                match_method = 'jaccard'
+                match_method = 'similarity_match'
             elif match['match_type'] == 'INTERUNIT_LOAN':
                 # For INTERUNIT_LOAN matches, extract keywords from audit trail
                 match_method = 'cross_reference'
             else:
-                match_method = ''
+                match_method = 'fallback_match'
 
             # Store audit information as JSON
             audit_info = {

@@ -310,6 +310,24 @@ function getStatusBadgeClass(status) {
     }
 }
 
+// Helper function to format match method names
+function formatMatchMethod(method) {
+    if (!method) return '';
+    
+    switch(method) {
+        case 'reference_match':
+            return 'Reference Match';
+        case 'similarity_match':
+            return 'Similarity Match';
+        case 'cross_reference':
+            return 'Cross Reference';
+        case 'fallback_match':
+            return 'Fallback Match';
+        default:
+            return method;
+    }
+}
+
 // Update reconciliation function to use company pairs
 async function runReconciliation() {
     const resultDiv = document.getElementById('reconciliation-result');
@@ -1033,7 +1051,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <td data-column="borrower_vch_type">${borrowerRecord.Vch_Type || ''}</td>
                 <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
-                <td data-column="match_method">${match.match_method || ''}</td>
+                <td data-column="match_method">${formatMatchMethod(match.match_method)}</td>
                 <td data-column="audit_info">
                     <div class="audit-info-text">${(formatAuditInfo(match.audit_info) || '').replace(/\n/g, '<br>')}</div>
                 </td>
