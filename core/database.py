@@ -215,8 +215,11 @@ def update_matches(matches):
             # Convert to JSON string
             audit_json = json.dumps(audit_info)
             
-            # Determine match status: auto-accept PO and LC matches
-            match_status = 'confirmed' if auto_accept else 'matched'
+            # Determine match status: auto-accept PO and LC matches, manual verification for MANUAL_VERIFICATION
+            if match['match_type'] == 'MANUAL_VERIFICATION':
+                match_status = 'pending_verification'
+            else:
+                match_status = 'confirmed' if auto_accept else 'matched'
             
             # Update the borrower (Credit) record - point to lender
             result1 = conn.execute(text("""
@@ -292,7 +295,7 @@ def get_matched_data():
                 t1.audit_info as match_audit_info
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'matched'
+            WHERE t1.match_status = 'matched' OR t1.match_status = 'pending_verification'
             ORDER BY t1.date_matched DESC
         """))
         
@@ -812,7 +815,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         debug_query = '''
             SELECT COUNT(*) as total_matches
             FROM tally_data 
-            WHERE (match_status = 'matched' OR match_status = 'confirmed')
+            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
                 AND (
                     (lender = :lender_company AND borrower = :borrower_company)
                     OR (lender = :borrower_company AND borrower = :lender_company)
@@ -849,7 +852,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
                 t2.role as matched_role
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed')
+            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed' OR t1.match_status = 'pending_verification')
                 AND (
                     (t1.lender = :lender_company AND t1.borrower = :borrower_company)
                     OR (t1.lender = :borrower_company AND t1.borrower = :lender_company)
@@ -878,7 +881,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         null_join_query = '''
             SELECT COUNT(*) as null_joins
             FROM tally_data 
-            WHERE (match_status = 'matched' OR match_status = 'confirmed')
+            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
                 AND matched_with IS NULL
                 AND (
                     (lender = :lender_company AND borrower = :borrower_company)
@@ -905,7 +908,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             null_details_query = '''
                 SELECT uid, lender, borrower, statement_month, statement_year, match_status, matched_with
                 FROM tally_data 
-                WHERE (match_status = 'matched' OR match_status = 'confirmed')
+                WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
                     AND matched_with IS NULL
                     AND (
                         (lender = :lender_company AND borrower = :borrower_company)
@@ -937,7 +940,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         # Find which UID is missing
         all_uids_in_db_query = '''
             SELECT uid FROM tally_data 
-            WHERE (match_status = 'matched' OR match_status = 'confirmed')
+            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
                 AND (
                     (lender = :lender_company AND borrower = :borrower_company)
                     OR (lender = :borrower_company AND borrower = :lender_company)
@@ -964,7 +967,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             SELECT t1.uid, t1.matched_with, t1.lender, t1.borrower
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed')
+            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed' OR t1.match_status = 'pending_verification')
                 AND t1.matched_with IS NOT NULL
                 AND t2.uid IS NULL
                 AND (

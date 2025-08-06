@@ -71,19 +71,42 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
     
     particulars_lower = particulars.lower()
     
-    # Salary-related keywords
-    salary_keywords = [
-        'salary', 'sal', 'wage', 'payroll', 'pay', 'remuneration', 'compensation',
+    # Primary salary keywords found in actual data
+    primary_salary_keywords = [
+        'salary', 'sal', 'wage', 'payroll', 'remuneration', 'compensation'
+    ]
+    
+    # Secondary keywords (context-dependent)
+    secondary_keywords = [
         'monthly', 'month', 'january', 'february', 'march', 'april', 'may', 'june',
         'july', 'august', 'september', 'october', 'november', 'december',
         'jan', 'feb', 'mar', 'apr', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
     ]
     
-    # Check if this is a salary-related transaction
-    is_salary = any(keyword in particulars_lower for keyword in salary_keywords)
+    # Check for primary salary keywords first
+    has_primary_keyword = any(keyword in particulars_lower for keyword in primary_salary_keywords)
     
-    if not is_salary:
+    if not has_primary_keyword:
         return None
+    
+    # Additional validation: must not contain non-salary indicators
+    non_salary_indicators = [
+        'payment for', 'purchase of', 'rent', 'electricity', 'transportation', 'marketing',
+        'maintenance', 'equipment', 'insurance', 'legal', 'consulting', 'training',
+        'travel', 'software', 'security', 'cleaning', 'bank charges', 'interest',
+        'loan repayment', 'tax payment', 'bill payment', 'expenses for', 'fees for',
+        'vendor payment', 'po no', 'work order', 'invoice', 'challan', 'tds deduction',
+        'vds deduction', 'duty', 'taxes', 'port', 'shipping', 'carrying charges',
+        'l/c', 'letter of credit', 'margin', 'collateral', 'acceptance commission',
+        'retirement value', 'principal', 'time loan', 'usance loan'
+    ]
+    
+    # If any non-salary indicator is present, it's not a salary transaction
+    if any(indicator in particulars_lower for indicator in non_salary_indicators):
+        return None
+    
+    # Check if this is a salary-related transaction
+    is_salary = has_primary_keyword
     
     # Extract person name (look for patterns like "Salary of John Doe" or "John Doe Salary")
     person_patterns = [
@@ -115,7 +138,8 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
             break
     
     # Extract matched keywords for audit trail
-    matched_keywords = [keyword for keyword in salary_keywords if keyword in particulars_lower]
+    all_keywords = primary_salary_keywords + secondary_keywords
+    matched_keywords = [keyword for keyword in all_keywords if keyword in particulars_lower]
     
     return {
         'person_name': person_name,
@@ -287,7 +311,30 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     matched_borrowers.add(borrower['uid'])
                     break
                 
-                # Common text pattern match
+                # Manual verification match (lowest priority - requires user verification)
+                # This matches records where debit, credit, and entered_by are exactly the same
+                lender_entered_by = lender.get('entered_by', '')
+                borrower_entered_by = borrower.get('entered_by', '')
+                
+                if (lender_entered_by and borrower_entered_by and 
+                    lender_entered_by == borrower_entered_by):
+                    matches.append({
+                        'lender_uid': lender['uid'],
+                        'borrower_uid': borrower['uid'],
+                        'amount': lender['Debit'],
+                        'match_type': 'MANUAL_VERIFICATION',
+                        'entered_by': lender_entered_by,
+                        'audit_trail': {
+                            'match_reason': 'Exact match on debit, credit, and entered_by fields',
+                            'requires_verification': True
+                        }
+                    })
+                    # Mark both records as matched
+                    matched_lenders.add(lender['uid'])
+                    matched_borrowers.add(borrower['uid'])
+                    break
+                
+                # Common text pattern match (fallback - only if no other matches found)
                 common_text = extract_common_text(
                     lender.get('Particulars', ''),
                     borrower.get('Particulars', '')
@@ -312,5 +359,6 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     # Mark both records as matched
                     matched_lenders.add(lender['uid'])
                     matched_borrowers.add(borrower['uid'])
+                    break
     
     return matches 
