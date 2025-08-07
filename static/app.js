@@ -2252,7 +2252,7 @@ function displayReconciliationHistory() {
         historyHTML += '</div>';
         historyHTML += '</div>';
         historyHTML += '<div class="ms-3">';
-        historyHTML += '<button type="button" class="btn btn-sm btn-outline-success me-2" onclick="showTab(\'matched-results\')">View Results</button>';
+        historyHTML += '<button type="button" class="btn btn-sm btn-outline-success me-2" onclick="viewReconciliationResults(\'' + result.companyPair + '\', \'' + result.statementPeriod + '\')">View Results</button>';
         historyHTML += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeReconciliationFromHistory(' + (reconciliationHistory.length - 1 - index) + ')">Remove</button>';
         historyHTML += '</div>';
         historyHTML += '</div>';
@@ -2281,6 +2281,50 @@ function removeReconciliationFromHistory(index) {
 function clearAllReconciliationHistory() {
     reconciliationHistory = [];
     displayReconciliationHistory();
+}
+
+// Function to view reconciliation results with automatic company pair and period selection
+function viewReconciliationResults(companyPair, statementPeriod) {
+    // Navigate to matched results page
+    showTab('matched-results');
+    
+    // Wait for the page to load and company pairs to be loaded
+    setTimeout(() => {
+        const companySelect = document.getElementById('matched-company-pair-select');
+        const periodSelect = document.getElementById('matched-period-select');
+        
+        if (companySelect && companyPair && companyPair !== 'All Companies') {
+            // Find and select the company pair
+            for (let i = 0; i < companySelect.options.length; i++) {
+                if (companySelect.options[i].text === companyPair) {
+                    companySelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // Trigger the change event to load periods for this company pair
+            if (companySelect) {
+                companySelect.dispatchEvent(new Event('change'));
+                
+                // Wait for periods to be loaded, then select the period
+                setTimeout(() => {
+                    if (periodSelect && statementPeriod && statementPeriod !== 'All Periods') {
+                        // Find and select the statement period
+                        for (let i = 0; i < periodSelect.options.length; i++) {
+                            if (periodSelect.options[i].text === statementPeriod) {
+                                periodSelect.selectedIndex = i;
+                                periodSelect.dispatchEvent(new Event('change'));
+                                break;
+                            }
+                        }
+                        
+                        // Load the matched results automatically
+                        loadMatchesInViewer();
+                    }
+                }, 200); // Wait for periods to load
+            }
+        }
+    }, 100);
 }
 
 // Function to clear the reconciliation notification (legacy function for backward compatibility)
