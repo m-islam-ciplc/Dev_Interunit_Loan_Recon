@@ -245,7 +245,7 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
     is_salary = has_primary_keyword
     
     # Extract person
-    # Also handle real-world patterns like "Md. Salah Uddin-ID : 11134" and "Amount paid to Md. Salah Uddin"
+    # Handle patterns with titles and employee IDs
     person_patterns = [
         # Traditional salary patterns
         r'salary\s+of\s+([A-Za-z\s]+?)(?:\s+for|\s+month|\s+period|$)',
@@ -254,13 +254,13 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
         r'([A-Za-z\s]+?)\s+payroll',
         
         # Real-world patterns with titles and employee IDs
-        r'\(([A-Za-z]+\.\s+[A-Za-z\s]+?)-ID\s*:\s*\d+\)',  # "(Md. Salah Uddin-ID : 11134)"
-        r'([A-Za-z]+\.\s+[A-Za-z\s]+?)-ID\s*:\s*\d+',  # "Md. Salah Uddin-ID : 11134" (without parentheses)
-        r'payable\s+to\s+([A-Za-z]+\.\s+[A-Za-z\s]+?)-ID\s*:\s*\d+',  # "Payable to Md. Salah Uddin-ID:11134"
-        r'amount\s+paid\s+to\s+([A-Za-z]+\.\s+[A-Za-z\s]+?)(?:\s*,|\s+for|\s+employee|\s+office|\s+human|\s+resources|\s+administration|\s+final|\s+settlement|\s+employee\s+id|\s*$)',  # "Amount paid to Md. Salah Uddin"
+        r'\(([A-Za-z]+\.\s+[A-Za-z\s]+?)-ID\s*:\s*\d+\)',  # "(Name-ID : Number)"
+        r'([A-Za-z]+\.\s+[A-Za-z\s]+?)-ID\s*:\s*\d+',  # "Name-ID : Number" (without parentheses)
+        r'payable\s+to\s+([A-Za-z]+\.\s+[A-Za-z\s]+?)-ID\s*:\s*\d+',  # "Payable to Name-ID:Number"
+        r'amount\s+paid\s+to\s+([A-Za-z]+\.\s+[A-Za-z\s]+?)(?:\s*,|\s+for|\s+employee|\s+office|\s+human|\s+resources|\s+administration|\s+final|\s+settlement|\s+employee\s+id|\s*$)',  # "Amount paid to Name"
         r'([A-Za-z]+\.\s+[A-Za-z\s]+?)(?:\s+for|\s+month|\s+period|\s+employee|\s+id|\s*,|\s*$)',  # General pattern for titles
         # Additional pattern for names with titles in parentheses
-        r'\(([A-Za-z]+\.\s+[A-Za-z\s]+?)\)',  # "(Md. Salah Uddin)" - just the name in parentheses
+        r'\(([A-Za-z]+\.\s+[A-Za-z\s]+?)\)',  # "(Name)" - just the name in parentheses
     ]
     
     person_name = None
@@ -288,14 +288,14 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
     
     # Fallback: Manual extraction for names in parentheses with employee IDs
     if not person_name:
-        # Look for pattern like "(Md. Salah Uddin-ID : 11134)"
+        # Look for pattern like "(Name-ID : Number)"
         start = particulars_lower.find("(")
         if start != -1:
             end = particulars_lower.find("-id :", start)
             if end != -1:
                 # Extract the name part (remove the opening parenthesis)
                 name_part = particulars_lower[start+1:end].strip()
-                # Check if it looks like a name with title (e.g., "md. salah uddin")
+                # Check if it looks like a name with title (e.g., "md. name")
                 if "." in name_part and len(name_part.split()) >= 2:
                     person_name = name_part
     

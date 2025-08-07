@@ -855,6 +855,18 @@ function formatAuditInfo(auditInfoStr) {
                     formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
                 }
                 break;
+            case 'FINAL_SETTLEMENT':
+                formattedInfo += `Final Settlement Match\n`;
+                if (auditInfo.person) {
+                    formattedInfo += `Person: ${auditInfo.person}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
+                break;
             case 'COMMON_TEXT':
                 formattedInfo += `Common Text Match\n`;
                 // Get the actual matched text from any field that might have it
