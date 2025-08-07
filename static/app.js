@@ -924,6 +924,44 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
     // Deduplicate matches to show only unique matches
     const uniqueMatches = deduplicateMatches(matches);
     
+    // Sort matches: AUTO-MATCH records first, then others
+    uniqueMatches.sort((a, b) => {
+        // Parse audit info to get match type
+        let matchTypeA = '';
+        let matchTypeB = '';
+        
+        try {
+            if (a.audit_info) {
+                const auditInfoA = JSON.parse(a.audit_info);
+                matchTypeA = auditInfoA.match_type || '';
+            }
+        } catch (e) {
+            console.warn('Could not parse audit_info for record A:', a.audit_info);
+        }
+        
+        try {
+            if (b.audit_info) {
+                const auditInfoB = JSON.parse(b.audit_info);
+                matchTypeB = auditInfoB.match_type || '';
+            }
+        } catch (e) {
+            console.warn('Could not parse audit_info for record B:', b.audit_info);
+        }
+        
+        // Check if records are auto-accepted (PO, LC, or INTERUNIT_LOAN)
+        const isAutoAcceptedA = ['PO', 'LC', 'INTERUNIT_LOAN'].includes(matchTypeA);
+        const isAutoAcceptedB = ['PO', 'LC', 'INTERUNIT_LOAN'].includes(matchTypeB);
+        
+        // Sort: AUTO-MATCH records first (-1), then others (1)
+        if (isAutoAcceptedA && !isAutoAcceptedB) {
+            return -1; // A is AUTO-MATCH, B is not
+        } else if (!isAutoAcceptedA && isAutoAcceptedB) {
+            return 1; // A is not AUTO-MATCH, B is
+        } else {
+            return 0; // Both are same type, maintain original order
+        }
+    });
+    
     // Get dynamic lender/borrower names from the first match (same logic as Excel export)
     let lender_name = 'Lender';
     let borrower_name = 'Borrower';
