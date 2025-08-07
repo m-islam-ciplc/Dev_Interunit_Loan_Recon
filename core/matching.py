@@ -219,7 +219,7 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
 
 
 def extract_common_text(text1: str, text2: str) -> Optional[str]:
-    """Extract common text patterns between two strings."""
+    """Extract common text patterns between two strings using multiple strategies."""
     if not text1 or not text2:
         return None
     
@@ -227,23 +227,107 @@ def extract_common_text(text1: str, text2: str) -> Optional[str]:
     text1_lower = text1.lower()
     text2_lower = text2.lower()
     
-    # Find common words (minimum 3 characters)
+    # Strategy 1: Find common words (minimum 3 characters)
     words1 = set(re.findall(r'\b\w{3,}\b', text1_lower))
     words2 = set(re.findall(r'\b\w{3,}\b', text2_lower))
-    
     common_words = words1.intersection(words2)
     
     if len(common_words) < 2:  # Need at least 2 common words
         return None
     
-    # Find the longest common phrase
-    common_phrase = ' '.join(sorted(common_words))
+    # Strategy 2: Look for continuous phrases (2-6 words) including numbers/punctuation
+    # Extract phrases from both texts
+    phrases1 = extract_phrases(text1_lower)
+    phrases2 = extract_phrases(text2_lower)
     
-    # Check if the phrase appears in both original texts (case-insensitive)
-    if common_phrase.lower() in text1_lower and common_phrase.lower() in text2_lower:
-        return common_phrase
+    # Find common phrases
+    common_phrases = phrases1.intersection(phrases2)
+    
+    # Strategy 2.5: Look for longer common sentences (7-15 words)
+    sentences1 = extract_sentences(text1_lower)
+    sentences2 = extract_sentences(text2_lower)
+    common_sentences = sentences1.intersection(sentences2)
+    
+    # Strategy 3: Look for numbers and amounts (including with / and -)
+    # Simple numbers: 123, 123.45
+    simple_numbers1 = set(re.findall(r'\b\d+(?:\.\d+)?\b', text1_lower))
+    simple_numbers2 = set(re.findall(r'\b\d+(?:\.\d+)?\b', text2_lower))
+    
+    # Numbers with separators: 123/456, 2023-2024, ABC-123
+    separator_numbers1 = set(re.findall(r'\b\d+[/\-]\d+\b', text1_lower))
+    separator_numbers2 = set(re.findall(r'\b\d+[/\-]\d+\b', text2_lower))
+    
+    # Mixed alphanumeric with separators: ABC/123, 2023/PO/456
+    mixed_codes1 = set(re.findall(r'\b[A-Za-z0-9]+[/\-][A-Za-z0-9]+\b', text1_lower))
+    mixed_codes2 = set(re.findall(r'\b[A-Za-z0-9]+[/\-][A-Za-z0-9]+\b', text2_lower))
+    
+    # Combine all number types
+    all_numbers1 = simple_numbers1.union(separator_numbers1).union(mixed_codes1)
+    all_numbers2 = simple_numbers2.union(separator_numbers2).union(mixed_codes2)
+    common_numbers = all_numbers1.intersection(all_numbers2)
+    
+    # Strategy 4: Look for alphanumeric codes (like account numbers, IDs)
+    codes1 = set(re.findall(r'\b[A-Za-z0-9]{4,}\b', text1_lower))
+    codes2 = set(re.findall(r'\b[A-Za-z0-9]{4,}\b', text2_lower))
+    common_codes = codes1.intersection(codes2)
+    
+    # Combine all evidence
+    evidence = []
+    
+    if common_sentences:
+        evidence.append(f"Common sentences: {', '.join(list(common_sentences)[:2])}")
+    
+    if common_phrases:
+        evidence.append(f"Common phrases: {', '.join(list(common_phrases)[:3])}")
+    
+    if common_numbers:
+        evidence.append(f"Common numbers: {', '.join(list(common_numbers)[:3])}")
+    
+    if common_codes:
+        evidence.append(f"Common codes: {', '.join(list(common_codes)[:3])}")
+    
+    if common_words:
+        evidence.append(f"Common words: {', '.join(list(common_words)[:5])}")
+    
+    # Return evidence if we have multiple types of matches
+    if len(evidence) >= 2:
+        return ' | '.join(evidence)
+    
+    # Fallback: if we have many common words, still consider it a match
+    if len(common_words) >= 5:
+        return f"Common words: {', '.join(list(common_words)[:8])}"
     
     return None
+
+
+def extract_phrases(text: str, min_words: int = 2, max_words: int = 6) -> set:
+    """Extract phrases of 2-6 words from text, including numbers and punctuation."""
+    # Split text into tokens (words, numbers, punctuation)
+    tokens = re.findall(r'\b\w+\b|\d+(?:\.\d+)?|\d+[/\-]\d+|[A-Za-z0-9]+[/\-][A-Za-z0-9]+|[^\w\s]', text)
+    phrases = set()
+    
+    for i in range(len(tokens) - min_words + 1):
+        for length in range(min_words, min(max_words + 1, len(tokens) - i + 1)):
+            phrase = ' '.join(tokens[i:i + length])
+            if len(phrase) >= 6:  # Minimum phrase length
+                phrases.add(phrase)
+    
+    return phrases
+
+
+def extract_sentences(text: str, min_words: int = 7, max_words: int = 15) -> set:
+    """Extract longer sentences/phrases of 7-15 words from text."""
+    # Split text into tokens (words, numbers, punctuation)
+    tokens = re.findall(r'\b\w+\b|\d+(?:\.\d+)?|\d+[/\-]\d+|[A-Za-z0-9]+[/\-][A-Za-z0-9]+|[^\w\s]', text)
+    sentences = set()
+    
+    for i in range(len(tokens) - min_words + 1):
+        for length in range(min_words, min(max_words + 1, len(tokens) - i + 1)):
+            sentence = ' '.join(tokens[i:i + length])
+            if len(sentence) >= 20:  # Minimum sentence length
+                sentences.add(sentence)
+    
+    return sentences
 
 
 def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

@@ -108,4 +108,14 @@ def get_unreconciled_pairs():
         pairs = database.get_unreconciled_company_pairs()
         return jsonify({'pairs': pairs})
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@data_bp.route('/matched-pairs', methods=['GET'])
+def get_matched_pairs():
+    """Get matched company pairs"""
+    try:
+        pairs = database.get_matched_company_pairs()
+        return jsonify({'pairs': pairs})
+    except Exception as e:
         return jsonify({'error': str(e)}), 500 

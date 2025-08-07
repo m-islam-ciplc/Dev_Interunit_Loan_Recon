@@ -1875,7 +1875,7 @@ function clearUnmatchedCompanySelection() {
 // Load company pairs for matched filter
 async function loadMatchedCompanyPairs() {
     try {
-        const response = await fetch('/api/unreconciled-pairs');
+        const response = await fetch('/api/matched-pairs');
         const result = await response.json();
         
         if (response.ok && result.pairs) {

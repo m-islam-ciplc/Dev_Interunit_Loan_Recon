@@ -1075,6 +1075,46 @@ def get_unreconciled_company_pairs():
         
         return pairs 
 
+
+def get_matched_company_pairs():
+    """Get company pairs that have matches (confirmed, pending, or matched status)"""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    with engine.connect() as conn:
+        # Get all unique company combinations with their statement periods
+        # Include those that have matches (matched, confirmed, or pending_verification status)
+        result = conn.execute(text("""
+            SELECT DISTINCT 
+                LEAST(lender, borrower) as company1,
+                GREATEST(lender, borrower) as company2,
+                statement_month,
+                statement_year,
+                COUNT(*) as transaction_count
+            FROM tally_data 
+            WHERE lender IS NOT NULL AND borrower IS NOT NULL
+            AND lender != borrower
+            AND (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+            GROUP BY LEAST(lender, borrower), GREATEST(lender, borrower), statement_month, statement_year
+            HAVING transaction_count >= 2
+            ORDER BY statement_year DESC, statement_month DESC, company1, company2
+        """))
+        
+        pairs = []
+        for row in result:
+            pairs.append({
+                'lender_company': row.company1,
+                'borrower_company': row.company2,
+                'month': row.statement_month,
+                'year': row.statement_year,
+                'transaction_count': row.transaction_count,
+                'description': f"{row.company1} ↔ {row.company2} ({row.statement_month} {row.statement_year})"
+            })
+        
+        return pairs
+
+
 def truncate_table():
     """Truncate the tally_data table - DANGEROUS OPERATION"""
     engine = create_engine(
