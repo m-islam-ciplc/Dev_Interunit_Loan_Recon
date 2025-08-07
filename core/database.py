@@ -178,6 +178,9 @@ def update_matches(matches):
                 # For salary matches, use the audit trail
                 match_method = 'similarity_match'
                 jaccard_score = match['audit_trail'].get('jaccard_score', 0)
+            elif match['match_type'] == 'FINAL_SETTLEMENT':
+                # For final settlement matches, use the audit trail
+                match_method = 'reference_match'
             elif match['match_type'] == 'COMMON_TEXT':
                 # For COMMON_TEXT matches, use the actual matching text and store in all relevant fields
                 common_text = match.get('common_text', '')
@@ -205,6 +208,8 @@ def update_matches(matches):
                 keywords = match.get('loan_id', '')
             elif match['match_type'] == 'SALARY':
                 keywords = f"person:{match.get('person', '')},period:{match.get('period', '')}"
+            elif match['match_type'] == 'FINAL_SETTLEMENT':
+                keywords = f"person:{match.get('person', '')}"
             elif match['match_type'] == 'COMMON_TEXT':
                 keywords = match.get('common_text', '')
             elif match['match_type'] == 'INTERUNIT_LOAN':
@@ -238,6 +243,13 @@ def update_matches(matches):
                 audit_info['borrower_amount'] = match.get('amount', '')
                 if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                     audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
+            elif match['match_type'] == 'FINAL_SETTLEMENT':
+                # Store FINAL_SETTLEMENT specific audit information
+                audit_info['person'] = match.get('person', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+                if 'audit_trail' in match:
+                    audit_info.update(match['audit_trail'])
             elif match['match_type'] == 'COMMON_TEXT':
                 # Store COMMON_TEXT specific audit information
                 audit_info['common_text'] = common_text

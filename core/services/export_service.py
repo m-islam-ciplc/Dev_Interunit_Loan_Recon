@@ -245,6 +245,15 @@ class ExportService:
                     formatted += f"Borrower Amount: {info['borrower_amount']}\n"
                 if info.get('jaccard_score'):
                     formatted += f"Similarity: {(info['jaccard_score'] * 100):.1f}%\n"
+            elif match_type == 'FINAL_SETTLEMENT':
+                if info.get('person'):
+                    formatted += f"Person: {info['person']}\n"
+                if info.get('lender_amount'):
+                    formatted += f"Lender Amount: {info['lender_amount']}\n"
+                if info.get('borrower_amount'):
+                    formatted += f"Borrower Amount: {info['borrower_amount']}\n"
+                if info.get('match_reason'):
+                    formatted += f"Match Reason: {info['match_reason']}\n"
             elif match_type == 'COMMON_TEXT':
                 if info.get('common_text'):
                     formatted += f"Matched Text: {info['common_text']}\n"
