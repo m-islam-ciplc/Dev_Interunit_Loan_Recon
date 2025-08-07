@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Handle browser back/forward buttons
+window.addEventListener('popstate', function(event) {
+    if (event.state && event.state.tab) {
+        showTab(event.state.tab);
+    }
+});
+
 // Tab switching function
 function showTab(tabName) {
     // Hide all tab panes
@@ -20,6 +27,10 @@ function showTab(tabName) {
     const selectedPane = document.getElementById('pane-' + tabName);
     if (selectedPane) {
         selectedPane.style.display = 'block';
+        
+        // Update URL without page reload
+        const url = '/' + tabName;
+        window.history.pushState({ tab: tabName }, '', url);
         
         // If switching to data-table tab, load data
         if (tabName === 'data-table') {

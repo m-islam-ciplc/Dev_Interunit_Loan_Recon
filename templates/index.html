@@ -23,7 +23,7 @@
             </a>
             <div class="collapse show" id="uploadMenu">
                 <div class="submenu-list">
-                    <a class="submenu-item" href="#" onclick="showTab('tally-upload')">Tally Ledger</a>
+                    <a class="submenu-item" href="/tally-upload">Tally Ledger</a>
                 </div>
             </div>
         </div>
@@ -35,7 +35,7 @@
             </a>
             <div class="collapse" id="runMatchMenu">
                 <div class="submenu-list">
-                    <a class="submenu-item" href="#" onclick="showTab('reconciliation')">Reconciliation</a>
+                    <a class="submenu-item" href="/reconciliation">Reconciliation</a>
                 </div>
             </div>
         </div>
@@ -47,8 +47,8 @@
             </a>
             <div class="collapse" id="viewMenu">
                 <div class="submenu-list">
-                    <a class="submenu-item" href="#" onclick="showTab('data-table')">Transaction Data</a>
-                    <a class="submenu-item" href="#" onclick="showTab('pairs-table')">Upload Pairs</a>
+                    <a class="submenu-item" href="/data-table">Transaction Data</a>
+                    <a class="submenu-item" href="/pairs-table">Upload Pairs</a>
                 </div>
             </div>
         </div>
@@ -60,8 +60,8 @@
             </a>
             <div class="collapse" id="resultsMenu">
                 <div class="submenu-list">
-                    <a class="submenu-item" href="#" onclick="showTab('matched-results')">Matched Transactions</a>
-                    <a class="submenu-item" href="#" onclick="showTab('unmatched-results')">Unmatched Transactions</a>
+                    <a class="submenu-item" href="/matched-results">Matched Transactions</a>
+                    <a class="submenu-item" href="/unmatched-results">Unmatched Transactions</a>
                 </div>
             </div>
         </div>
@@ -73,7 +73,7 @@
             </a>
             <div class="collapse" id="databaseMenu">
                 <div class="submenu-list">
-                    <a class="submenu-item" href="#" onclick="showTab('database-tools')">Database Tools</a>
+                    <a class="submenu-item" href="/database-tools">Database Tools</a>
                 </div>
             </div>
         </div>
@@ -345,5 +345,15 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+<script>
+// Handle active tab based on server-side parameter
+document.addEventListener('DOMContentLoaded', function() {
+    const activeTab = '{{ active_tab }}';
+    if (activeTab) {
+        showTab(activeTab);
+    }
+});
+</script>
 </body>
 </html> 
