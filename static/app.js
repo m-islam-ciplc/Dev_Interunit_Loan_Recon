@@ -15,6 +15,26 @@ window.addEventListener('popstate', function(event) {
     }
 });
 
+// Prevent submenu collapse when submenu items are clicked
+document.addEventListener('DOMContentLoaded', function() {
+    const submenuItems = document.querySelectorAll('.submenu-item');
+    submenuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Prevent the click from bubbling up to the parent collapse trigger
+            e.stopPropagation();
+            e.preventDefault();
+            
+            // Get the href and navigate programmatically
+            const href = this.getAttribute('href');
+            if (href) {
+                // Use showTab instead of direct navigation to maintain URL structure
+                const tabName = href.substring(1); // Remove the leading slash
+                showTab(tabName);
+            }
+        });
+    });
+});
+
 // Tab switching function
 function showTab(tabName) {
     // Hide all tab panes
