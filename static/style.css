@@ -762,4 +762,61 @@ td[data-column="actions"] .btn:last-child {
     background: #e74c3c !important;
     color: white !important;
     box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+}
+
+/* AND Button Styling */
+.and-button {
+    display: inline-block !important;
+    background: linear-gradient(135deg, #0096ff, #00bcd4) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 2px 8px !important;
+    margin: 0 4px !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    box-shadow: 0 1px 3px rgba(0, 150, 255, 0.3) !important;
+    line-height: 1.2 !important;
+    vertical-align: middle !important;
+}
+
+.and-button strong {
+    color: white !important;
+    font-weight: bold !important;
+}
+
+/* More specific selector to ensure it works */
+.alert .d-flex .and-button {
+    display: inline-block !important;
+    background: linear-gradient(135deg, #0096ff, #00bcd4) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 2px 8px !important;
+    margin: 0 4px !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    text-transform: uppercase !important;
+    box-shadow: 0 1px 3px rgba(0, 150, 255, 0.3) !important;
+    line-height: 1.2 !important;
+    vertical-align: middle !important;
+}
+
+.alert .d-flex .and-button strong {
+    color: white !important;
+    font-weight: bold !important;
+}
+
+/* Ensure proper spacing in recent uploads */
+#recent-uploads-list .alert .d-flex {
+    white-space: normal !important;
+}
+
+#recent-uploads-list .alert .d-flex strong {
+    white-space: normal !important;
+}
+
+#recent-uploads-list .alert .d-flex span {
+    white-space: normal !important;
 } 

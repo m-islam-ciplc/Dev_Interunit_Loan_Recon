@@ -117,8 +117,7 @@ class FileService:
             total_rows += rows2
             
             # Record both files in recent uploads
-            self.record_recent_upload(file1.filename)
-            self.record_recent_upload(file2.filename)
+            self.record_recent_upload_pair(file1.filename, file2.filename)
             
             return True, None, pair_id, total_rows
             
@@ -176,6 +175,30 @@ class FileService:
                         f.write(f_name + '\n')
             except Exception as e:
                 print(f"Error recording recent upload: {e}")
+
+    def record_recent_upload_pair(self, filename1: str, filename2: str) -> None:
+        """Record a file pair in recent uploads list."""
+        with self.recent_uploads_lock:
+            try:
+                if os.path.exists(self.recent_uploads_file):
+                    with open(self.recent_uploads_file, 'r', encoding='utf-8') as f:
+                        uploads = [line.strip() for line in f if line.strip()]
+                else:
+                    uploads = []
+                
+                # Create pair entry
+                pair_entry = f"{filename1} AND {filename2}"
+                
+                # Remove if already present (check both individual files and pair)
+                uploads = [f for f in uploads if f != filename1 and f != filename2 and f != pair_entry]
+                uploads.insert(0, pair_entry)
+                uploads = uploads[:self.recent_uploads_limit]
+                
+                with open(self.recent_uploads_file, 'w', encoding='utf-8') as f:
+                    for f_name in uploads:
+                        f.write(f_name + '\n')
+            except Exception as e:
+                print(f"Error recording recent upload pair: {e}")
     
     def get_recent_uploads(self) -> List[str]:
         """Get list of recent uploads."""

@@ -1295,7 +1295,17 @@ async function loadRecentUploads() {
                 html += '<div class="alert alert-success mb-2" role="alert">';
                 html += '<div class="d-flex align-items-center">';
                 html += '<i class="bi bi-file-earmark-arrow-up me-2"></i>';
-                html += '<strong>File:</strong> ' + upload;
+                
+                // Check if this is a file pair (contains " AND ")
+                if (upload.includes(' AND ')) {
+                    const [file1, file2] = upload.split(' AND ');
+                    const pairHtml = '<span><strong>Files:</strong></span><span>&nbsp;</span>' + file1 + ' <span class="and-button"><strong>AND</strong></span> ' + file2;
+                    html += pairHtml;
+                } else {
+                    // Handle legacy individual files
+                    html += '<strong>File: </strong>' + upload;
+                }
+                
                 html += '</div>';
                 html += '</div>';
             });
