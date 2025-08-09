@@ -33,10 +33,17 @@ def extract_lc(particulars: str) -> Optional[str]:
 
 
 # Helper: detect the specific Time Loan repayment phrase
-def has_time_loan_repayment_phrase(particulars: str) -> bool:
+def has_time_loan_phrase(particulars: str) -> bool:
     if not particulars:
         return False
-    pattern = r"amount\s+being\s+paid\s+as\s*principal\s*&?\s*interest\s+repayment\s+of\s+time\s+loan\s+of"
+    # Accept both variants:
+    # - "... Principal & Interest repayment of Time Loan ..."
+    # - "... Principal & Interest of Time Loan ..."
+    pattern = (
+        r"amount\s+being\s+paid\s+as\s*principal\s*&?\s*interest"  # Principal & Interest
+        r"(?:\s+repayment)?"                                           # optional 'repayment'
+        r"\s+(?:of\s+)?time\s+loan"                                  # 'of Time Loan' or 'Time Loan'
+    )
     return re.search(pattern, particulars, flags=re.IGNORECASE) is not None
 
 
@@ -50,6 +57,32 @@ def extract_normalized_loan_id(particulars: str) -> Optional[str]:
     prefix = match.group("prefix")
     digits = match.group("digits")
     return f"{prefix}-{digits}"
+
+
+def extract_normalized_loan_id_after_time_loan_phrase(particulars: str) -> Optional[str]:
+    """Extract the first Loan ID that appears AFTER the time loan phrase.
+    Normalizes to LD-<digits> for comparison/storage.
+    """
+    if not particulars:
+        return None
+    phrase = re.search(
+        (
+            r"amount\s+being\s+paid\s+as\s*principal\s*&?\s*interest"  # Principal & Interest
+            r"(?:\s+repayment)?"                                           # optional 'repayment'
+            r"\s+(?:of\s+)?time\s+loan"                                  # 'of Time Loan' or 'Time Loan'
+        ),
+        particulars,
+        flags=re.IGNORECASE,
+    )
+    if not phrase:
+        return None
+    start = phrase.end()
+    after = particulars[start:]
+    m = re.search(r"\b(?:LD|ID|LOAN)[-\s]?(\d+)\b", after.upper())
+    if not m:
+        return None
+    digits = m.group(1)
+    return f"LD-{digits}"
 
 def extract_loan_id(particulars: str) -> Optional[str]:
     """Extract Loan ID from particulars."""
@@ -746,32 +779,28 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     
                 
                 # Loan ID match (redefined condition):
-                # If both narrations contain the Time Loan repayment phrase and share the same Loan ID
+                # If both narrations contain the Time Loan phrase and share the same Loan ID AFTER the phrase
                 lender_text_full = lender.get('Particulars', '')
                 borrower_text_full = borrower.get('Particulars', '')
-                if has_time_loan_repayment_phrase(lender_text_full) and has_time_loan_repayment_phrase(borrower_text_full):
-                    lender_norm_id = extract_normalized_loan_id(lender_text_full)
-                    borrower_norm_id = extract_normalized_loan_id(borrower_text_full)
-                    if lender_norm_id and borrower_norm_id:
-                        # Compare by digits to be resilient to prefix differences; store as LD-<digits>
-                        lender_digits = lender_norm_id.split('-', 1)[1] if '-' in lender_norm_id else lender_norm_id
-                        borrower_digits = borrower_norm_id.split('-', 1)[1] if '-' in borrower_norm_id else borrower_norm_id
-                        if lender_digits == borrower_digits:
-                            matches.append({
-                                'lender_uid': lender['uid'],
-                                'borrower_uid': borrower['uid'],
-                                'amount': lender['Debit'],
-                                'match_type': 'LOAN_ID',
-                                'loan_id': f"LD-{lender_digits}",
-                                'audit_trail': {
-                                    'match_reason': 'Time Loan repayment phrase + matching Loan ID',
-                                    'phrase_detected': True
-                                }
-                            })
-                            # Mark both records as matched
-                            matched_lenders.add(lender['uid'])
-                            matched_borrowers.add(borrower['uid'])
-                            break
+                if has_time_loan_phrase(lender_text_full) and has_time_loan_phrase(borrower_text_full):
+                    lender_after_id = extract_normalized_loan_id_after_time_loan_phrase(lender_text_full)
+                    borrower_after_id = extract_normalized_loan_id_after_time_loan_phrase(borrower_text_full)
+                    if lender_after_id and borrower_after_id and lender_after_id == borrower_after_id:
+                        matches.append({
+                            'lender_uid': lender['uid'],
+                            'borrower_uid': borrower['uid'],
+                            'amount': lender['Debit'],
+                            'match_type': 'LOAN_ID',
+                            'loan_id': lender_after_id,
+                            'audit_trail': {
+                                'match_reason': 'Time Loan phrase + matching Loan ID after phrase',
+                                'phrase_detected': True
+                            }
+                        })
+                        # Mark both records as matched
+                        matched_lenders.add(lender['uid'])
+                        matched_borrowers.add(borrower['uid'])
+                        break
                 
                 # Loan ID match (generic exact token equality)
                 if lender_loan_id and borrower_loan_id and lender_loan_id == borrower_loan_id:
