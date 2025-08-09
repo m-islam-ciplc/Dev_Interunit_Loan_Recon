@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS tally_data (
     Credit DECIMAL(18,2),
     entered_by VARCHAR(64),
     input_date DATETIME,
-    match_status VARCHAR(16),
+    match_status VARCHAR(32),
     matched_with VARCHAR(64),
     date_matched DATETIME,
     keywords TEXT,  -- Will be deprecated, use audit_info instead
