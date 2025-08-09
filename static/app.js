@@ -991,9 +991,9 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
             console.warn('Could not parse audit_info for record B:', b.audit_info);
         }
         
-        // Check if records are auto-accepted (PO, LC, FINAL_SETTLEMENT, or INTERUNIT_LOAN)
-        const isAutoAcceptedA = ['PO', 'LC', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchTypeA);
-        const isAutoAcceptedB = ['PO', 'LC', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchTypeB);
+        // Check if records are auto-accepted (PO, LC, LOAN_ID, FINAL_SETTLEMENT, or INTERUNIT_LOAN)
+        const isAutoAcceptedA = ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchTypeA);
+        const isAutoAcceptedB = ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchTypeB);
         
         // Sort: AUTO-MATCH records first (-1), then others (1)
         if (isAutoAcceptedA && !isAutoAcceptedB) {
@@ -1224,8 +1224,8 @@ function generateActionButtons(match) {
         console.warn('Could not parse audit_info:', match.audit_info);
     }
     
-    // Check if this match is auto-accepted (PO, LC, FINAL_SETTLEMENT, or INTERUNIT_LOAN)
-    const isAutoAccepted = ['PO', 'LC', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchType);
+    // Check if this match is auto-accepted (PO, LC, LOAN_ID, FINAL_SETTLEMENT, or INTERUNIT_LOAN)
+    const isAutoAccepted = ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchType);
     
     // If auto-accepted, show a badge instead of action buttons
     if (isAutoAccepted) {

@@ -144,8 +144,8 @@ def update_matches(matches):
     """Update database with matched records using the hybrid matching system.
     
     Auto-acceptance logic:
-    - PO, LC, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches are automatically confirmed (high confidence)
-    - LOAN_ID, SALARY, and COMMON_TEXT matches require manual review
+    - PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches are automatically confirmed (high confidence)
+    - SALARY and COMMON_TEXT matches require manual review
     
     Stores match information in three columns:
     1. match_method: 'exact' or 'jaccard'
@@ -165,8 +165,8 @@ def update_matches(matches):
     with engine.connect() as conn:
         for i, match in enumerate(matches):
             # Prepare match information and determine auto-acceptance
-            # PO, LC, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches are auto-accepted due to high confidence
-            auto_accept = match['match_type'] in ['PO', 'LC', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN']
+            # PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches are auto-accepted due to high confidence
+            auto_accept = match['match_type'] in ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN']
             
             if match['match_type'] == 'PO':
                 match_method = 'reference_match'
