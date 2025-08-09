@@ -149,7 +149,7 @@ def extract_final_settlement_details(particulars: str) -> Optional[Dict[str, Any
     
     # 2) Borrower pattern: "Payable to *-ID:* * final settlement*"
     borrower_person_match = re.search(
-        r"payable\s+to\s+(?P<name>[^\r\n\-]+?)\s*-\s*ID\s*[:：]\s*(?P<id>\d+).{0,100}?final\s+settlement",
+        r"payable\s+to\s+(?P<name>[^\r\n\-]+?)\s*-\s*ID\s*[:：]\s*(?P<id>\d+)",
         particulars,
         flags=re.IGNORECASE | re.DOTALL,
     ) if ('payable to' in particulars_lower and 'final settlement' in particulars_lower) else None
@@ -197,7 +197,7 @@ def extract_salary_details(particulars: str) -> Optional[Dict[str, Any]]:
     
     # 2) Borrower pattern: "Payable to *-ID:* * final settlement*"
     borrower_person_match = re.search(
-        r"payable\s+to\s+(?P<name>[^\r\n\-]+?)\s*-\s*ID\s*[:：]\s*(?P<id>\d+).{0,100}?final\s+settlement",
+        r"payable\s+to\s+(?P<name>[^\r\n\-]+?)\s*-\s*ID\s*[:：]\s*(?P<id>\d+)",
         particulars,
         flags=re.IGNORECASE | re.DOTALL,
     ) if ('payable to' in particulars_lower and 'final settlement' in particulars_lower) else None
@@ -510,6 +510,32 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     matched_borrowers.add(borrower['uid'])
                     break
                     
+                # Final Settlement match
+                lender_final_settlement = extract_final_settlement_details(lender.get('Particulars', ''))
+                borrower_final_settlement = extract_final_settlement_details(borrower.get('Particulars', ''))
+                
+                if lender_final_settlement and borrower_final_settlement:
+                    # Check if both sides have the same person
+                    if lender_final_settlement['person_name'] == borrower_final_settlement['person_name']:
+                        matches.append({
+                            'lender_uid': lender['uid'],
+                            'borrower_uid': borrower['uid'],
+                            'amount': lender['Debit'],
+                            'match_type': 'FINAL_SETTLEMENT',
+                            'person': lender_final_settlement['person_combined'],
+                            'audit_trail': {
+                                'match_reason': 'Final settlement match',
+                                'lender_person': lender_final_settlement['person_combined'],
+                                'borrower_person': borrower_final_settlement['person_combined'],
+                                'person_name': lender_final_settlement['person_name'],
+                                'person_id': lender_final_settlement['person_id']
+                            }
+                        })
+                        # Mark both records as matched
+                        matched_lenders.add(lender['uid'])
+                        matched_borrowers.add(borrower['uid'])
+                        break
+                    
                 # Salary payment match with both exact and Jaccard matching
                 lender_text = lender.get('Particulars', '')
                 borrower_text = borrower.get('Particulars', '')
@@ -550,32 +576,7 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         matched_lenders.add(lender['uid'])
                         matched_borrowers.add(borrower['uid'])
                         break
-                
-                # Final Settlement match
-                lender_final_settlement = extract_final_settlement_details(lender.get('Particulars', ''))
-                borrower_final_settlement = extract_final_settlement_details(borrower.get('Particulars', ''))
-                
-                if lender_final_settlement and borrower_final_settlement:
-                    # Check if both sides have the same person
-                    if lender_final_settlement['person_name'] == borrower_final_settlement['person_name']:
-                        matches.append({
-                            'lender_uid': lender['uid'],
-                            'borrower_uid': borrower['uid'],
-                            'amount': lender['Debit'],
-                            'match_type': 'FINAL_SETTLEMENT',
-                            'person': lender_final_settlement['person_combined'],
-                            'audit_trail': {
-                                'match_reason': 'Final settlement match',
-                                'lender_person': lender_final_settlement['person_combined'],
-                                'borrower_person': borrower_final_settlement['person_combined'],
-                                'person_name': lender_final_settlement['person_name'],
-                                'person_id': lender_final_settlement['person_id']
-                            }
-                        })
-                        # Mark both records as matched
-                        matched_lenders.add(lender['uid'])
-                        matched_borrowers.add(borrower['uid'])
-                        break
+
                 
                 # LC match
                 if lender_lc and borrower_lc and lender_lc == borrower_lc:
@@ -810,4 +811,4 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     matched_borrowers.add(borrower['uid'])
                     break
     
-    return matches
+    return matches 
