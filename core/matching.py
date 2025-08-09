@@ -530,11 +530,11 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                                 'person_name': lender_final_settlement['person_name'],
                                 'person_id': lender_final_settlement['person_id']
                             }
-                        })
-                        # Mark both records as matched
-                        matched_lenders.add(lender['uid'])
-                        matched_borrowers.add(borrower['uid'])
-                        break
+                    })
+                    # Mark both records as matched
+                    matched_lenders.add(lender['uid'])
+                    matched_borrowers.add(borrower['uid'])
+                    break
                     
                 # Salary payment match with both exact and Jaccard matching
                 lender_text = lender.get('Particulars', '')
