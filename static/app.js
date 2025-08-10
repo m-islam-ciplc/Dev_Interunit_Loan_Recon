@@ -972,35 +972,23 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
     // Build context header if filter context is provided
     let contextHeader = '';
     if (filterContext && (filterContext.lenderCompany || filterContext.month)) {
-        contextHeader = `
-            <div class="alert alert-primary mb-3" role="alert">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h6 class="mb-2"><i class="bi bi-funnel me-2"></i>Results Filter</h6>
-                        <div class="row">
-                            ${filterContext.lenderCompany ? `
-                                <div class="col-md-6">
-                                    <strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}
-                                </div>
-                            ` : ''}
-                            ${filterContext.month ? `
-                                <div class="col-md-6">
-                                    <strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Showing ${uniqueMatches.length} matched transactions
-                        </small>
-                    </div>
+        let filterInfo = [];
+        if (filterContext.lenderCompany) {
+            filterInfo.push(`<strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}`);
+        }
+        if (filterContext.month) {
+            filterInfo.push(`<strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}`);
+        }
+        
+        if (filterInfo.length > 0) {
+            contextHeader = `
+                <div class="alert alert-primary mb-3" role="alert">
+                    <i class="bi bi-funnel me-2"></i>${filterInfo.join('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')}
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
-
+    
     let tableHTML = `
         <div class="matched-transactions-wrapper">
             ${contextHeader}
@@ -1744,35 +1732,23 @@ function displayUnmatchedResults(unmatched, filterContext = null) {
     // Build context header if filter context is provided
     let contextHeader = '';
     if (filterContext && (filterContext.lenderCompany || filterContext.month)) {
-        contextHeader = `
-            <div class="alert alert-primary mb-3" role="alert">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h6 class="mb-2"><i class="bi bi-funnel me-2"></i>Results Filter</h6>
-                        <div class="row">
-                            ${filterContext.lenderCompany ? `
-                                <div class="col-md-6">
-                                    <strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}
-                                </div>
-                            ` : ''}
-                            ${filterContext.month ? `
-                                <div class="col-md-6">
-                                    <strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Showing ${unmatched.length} unmatched transactions
-                        </small>
-                    </div>
+        let filterInfo = [];
+        if (filterContext.lenderCompany) {
+            filterInfo.push(`<strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}`);
+        }
+        if (filterContext.month) {
+            filterInfo.push(`<strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}`);
+        }
+        
+        if (filterInfo.length > 0) {
+            contextHeader = `
+                <div class="alert alert-primary mb-3" role="alert">
+                    <i class="bi bi-funnel me-2"></i>${filterInfo.join('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')}
                 </div>
-            </div>
-        `;
+            `;
+        }
     }
-
+    
     let tableHTML = `
         <div class="unmatched-transactions-wrapper">
             ${contextHeader}

@@ -11,7 +11,7 @@ app = Flask(__name__)
 # Create upload folder
 os.makedirs('uploads', exist_ok=True)
 
-# Register all route blrueprints (UI + API)
+# Register all route blueprints (UI + API)
 register_blueprints(app)
 
 if __name__ == '__main__':
