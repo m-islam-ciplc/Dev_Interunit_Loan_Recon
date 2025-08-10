@@ -54,15 +54,11 @@ BANK_MAPPING = {
     'MUTUAL TRUST BANK PLC': 'MUTUAL TRUST BANK',
     'MUTUAL TRUST BANK LIMITED': 'MUTUAL TRUST BANK',
     
-    # DHAKA BANK
-    'DBL': 'DHAKA BANK',
-    'DHAKA BANK': 'DHAKA BANK',
-    
     # OTHER BANKS
-    # 'NBL': 'NATIONAL BANK',
-    # 'SBL': 'STANDARD BANK',
-    # 'UBL': 'UNITED BANK',
-    # 'CBL': 'CITY BANK'
+    'NBL': 'NATIONAL BANK',
+    'SBL': 'STANDARD BANK',
+    'UBL': 'UNITED BANK',
+    'CBL': 'CITY BANK'
 }
 
 # Bank Account Number Patterns
