@@ -371,6 +371,109 @@ def get_matched_data():
         
         return records
 
+def get_auto_matched_data():
+    """Get only auto-matched transactions (high confidence matches that are automatically accepted).
+    
+    Returns records with auto-accepted matching information:
+    - PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches
+    - These are automatically confirmed due to high confidence
+    
+    Auto-matches are identified by:
+    - match_status = 'confirmed' (automatically accepted)
+    - match_method IN ('reference_match', 'cross_reference')
+      * reference_match: PO, LC, LOAN_ID, FINAL_SETTLEMENT matches
+      * cross_reference: INTERUNIT_LOAN matches
+    
+    Results are ordered by match date descending."""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT 
+                t1.*,
+                t2.lender as matched_lender, 
+                t2.borrower as matched_borrower,
+                t2.Particulars as matched_particulars, 
+                t2.Date as matched_date,
+                t2.Debit as matched_Debit, 
+                t2.Credit as matched_Credit,
+                t2.uid as matched_uid,
+                t2.Vch_Type as matched_Vch_Type,
+                t2.role as matched_role,
+                t1.match_method,
+                t1.audit_info as match_audit_info
+            FROM tally_data t1
+            LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
+            WHERE t1.match_status = 'confirmed' 
+                AND t1.match_method IN ('reference_match', 'cross_reference')
+            ORDER BY t1.date_matched DESC
+        """))
+        
+        records = []
+        for row in result:
+            record = dict(row._mapping)
+            records.append(record)
+        
+        return records
+
+def get_auto_matched_data_by_companies(lender_company, borrower_company, month=None, year=None):
+    """Get auto-matched transactions filtered by company names and optionally by statement period.
+    
+    Only returns high-confidence auto-matches:
+    - match_status = 'confirmed' (automatically accepted)
+    - match_method IN ('reference_match', 'cross_reference')
+      * reference_match: PO, LC, LOAN_ID, FINAL_SETTLEMENT matches
+      * cross_reference: INTERUNIT_LOAN matches
+    
+    Excludes manual matches that require verification (SALARY, COMMON_TEXT)."""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    with engine.connect() as conn:
+        # Main query for auto-matched data only
+        query = '''
+            SELECT 
+                t1.*,
+                t2.lender as matched_lender, 
+                t2.borrower as matched_borrower,
+                t2.Particulars as matched_particulars, 
+                t2.Date as matched_date,
+                t2.Debit as matched_Debit, 
+                t2.Credit as matched_Credit,
+                t2.uid as matched_uid,
+                t2.Vch_Type as matched_Vch_Type,
+                t2.role as matched_role
+            FROM tally_data t1
+            LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
+            WHERE t1.match_status = 'confirmed' 
+                AND t1.match_method IN ('reference_match', 'cross_reference')
+                AND (
+                    (t1.lender = :lender_company AND t1.borrower = :borrower_company)
+                    OR (t1.lender = :borrower_company AND t1.borrower = :lender_company)
+                )
+        '''
+        params = {
+            'lender_company': lender_company,
+            'borrower_company': borrower_company
+        }
+        if month:
+            query += ' AND t1.statement_month = :month'
+            params['month'] = month
+        if year:
+            query += ' AND t1.statement_year = :year'
+            params['year'] = year
+        query += ' ORDER BY t1.date_matched DESC'
+        
+        result = conn.execute(text(query), params)
+        records = []
+        for row in result:
+            record = dict(row._mapping)
+            records.append(record)
+        
+        return records
+
 def update_match_status(uid, status, confirmed_by=None):
     """Update match status (accepted/rejected)"""
     try:

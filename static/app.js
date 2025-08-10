@@ -721,52 +721,7 @@ async function loadMatchesInViewer() {
     }
 }
 
-async function downloadMatches() {
-    try {
-        // Get selected company pair and period
-        const companySelect = document.getElementById('matched-company-pair-select');
-        const periodSelect = document.getElementById('matched-period-select');
-        const companyPair = companySelect ? companySelect.value : '';
-        const period = periodSelect ? periodSelect.value : '';
-        
-        let lenderCompany = '';
-        let borrowerCompany = '';
-        let month = '';
-        let year = '';
-        
-        if (companyPair && companyPair.includes('↔')) {
-            const parts = companyPair.split('↔').map(s => s.trim());
-            lenderCompany = parts[0];
-            borrowerCompany = parts[1];
-        }
-        
-        if (period && period !== '-- All Periods --') {
-            const periodParts = period.split(' ');
-            if (periodParts.length === 2) {
-                month = periodParts[0];
-                year = periodParts[1];
-            }
-        }
-        
-        // Build query string
-        let url = '/api/download-matches';
-        const params = [];
-        if (lenderCompany && borrowerCompany) {
-            params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
-            params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
-        }
-        if (month) params.push(`month=${encodeURIComponent(month)}`);
-        if (year) params.push(`year=${encodeURIComponent(year)}`);
-        if (params.length > 0) {
-            url += '?' + params.join('&');
-        }
-        
-        // Use browser navigation to download (same approach as unmatched)
-        window.location.href = url;
-    } catch (error) {
-        console.error('Error downloading matched results:', error);
-    }
-}
+
 
 function formatAuditInfo(auditInfoStr) {
     if (!auditInfoStr) return '';
@@ -2405,5 +2360,71 @@ async function resetAllMatches() {
         }
     } catch (error) {
         resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message}</div>`;
+    }
+}
+
+async function downloadAutoMatches() {
+    try {
+        // Get selected company pair and period
+        const companySelect = document.getElementById('matched-company-pair-select');
+        const periodSelect = document.getElementById('matched-period-select');
+        const companyPair = companySelect ? companySelect.value : '';
+        const period = periodSelect ? periodSelect.value : '';
+        
+        let lenderCompany = '';
+        let borrowerCompany = '';
+        let month = '';
+        let year = '';
+        
+        if (companyPair && companyPair.includes('↔')) {
+            const parts = companyPair.split('↔').map(s => s.trim());
+            lenderCompany = parts[0];
+            borrowerCompany = parts[1];
+        }
+        
+        if (period && period !== '-- All Periods --') {
+            const periodParts = period.split(' ');
+            if (periodParts.length === 2) {
+                month = periodParts[0];
+                year = periodParts[1];
+            }
+        }
+        
+        // Build query string
+        let url = '/api/download-matches';
+        const params = [];
+        if (lenderCompany && borrowerCompany) {
+            params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+            params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+        }
+        if (month) params.push(`month=${encodeURIComponent(month)}`);
+        if (year) params.push(`year=${encodeURIComponent(year)}`);
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        
+        // Show loading state
+        const downloadBtn = document.getElementById('download-matched-btn');
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Downloading...';
+        downloadBtn.disabled = true;
+        
+        // Trigger download
+        window.location.href = url;
+        
+        // Reset button after a delay
+        setTimeout(() => {
+            downloadBtn.innerHTML = originalText;
+            downloadBtn.disabled = false;
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error downloading auto-matched results:', error);
+        showNotification('Failed to download auto-matched results', 'error');
+        
+        // Reset button
+        const downloadBtn = document.getElementById('download-matched-btn');
+        downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i>Download Auto-Matched Results';
+        downloadBtn.disabled = false;
     }
 }

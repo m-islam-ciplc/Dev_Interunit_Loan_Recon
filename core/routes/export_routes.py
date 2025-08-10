@@ -8,7 +8,7 @@ export_bp = Blueprint('export', __name__)
 
 @export_bp.route('/download-matches', methods=['GET'])
 def download_matches():
-    """Download matched transactions as Excel - REFACTORED to use ExportService"""
+    """Download auto-matched transactions as Excel - Only high-confidence auto-matches are included"""
     try:
         filters = {
             'lender_company': request.args.get('lender_company'),

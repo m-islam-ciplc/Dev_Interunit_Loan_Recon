@@ -19,22 +19,47 @@ class ExportService:
         self.export_folder = 'uploads'
         os.makedirs(self.export_folder, exist_ok=True)
     
-    def export_matched_transactions(self, filters: Dict[str, Optional[str]]):
-        """Export matched transactions as Excel with proper formatting."""
+    def format_amount(self, amount) -> str:
+        """Format amount with 2 decimal places for Excel export.
+        
+        Args:
+            amount: The amount value (can be string, float, or None)
+            
+        Returns:
+            Formatted amount string with 2 decimal places (e.g., "1000.00")
+        """
+        if amount is None or amount == '' or amount == 0:
+            return "0.00"
+        
         try:
-            # Get filtered data
+            # Convert to float and format with 2 decimal places
+            formatted = "{:.2f}".format(float(amount))
+            return formatted
+        except (ValueError, TypeError):
+            # If conversion fails, return as is
+            return str(amount) if amount else "0.00"
+    
+    def export_matched_transactions(self, filters: Dict[str, Optional[str]]):
+        """Export auto-matched transactions as Excel with proper formatting.
+        
+        Only includes high-confidence auto-matches:
+        - PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches
+        - These are automatically confirmed due to high confidence
+        - Excludes manual matches that require verification"""
+        try:
+            # Get filtered data - only auto-matched records
             lender_company = filters.get('lender_company')
             borrower_company = filters.get('borrower_company')
             month = filters.get('month')
             year = filters.get('year')
             
             if lender_company and borrower_company:
-                matches = database.get_matched_data_by_companies(lender_company, borrower_company, month, year)
+                matches = database.get_auto_matched_data_by_companies(lender_company, borrower_company, month, year)
             else:
-                matches = database.get_matched_data()
+                matches = database.get_auto_matched_data()
             
             if not matches:
-                return jsonify({'error': 'No matched data found'}), 404
+                return jsonify({'error': 'No auto-matched data found'}), 404
             
             # Process and format data
             export_rows = self._process_matched_data(matches)
@@ -42,8 +67,8 @@ class ExportService:
             # Create Excel file with descriptive filename
             df = pd.DataFrame(export_rows)
             
-            # Generate filename: Matched_Transactions_Company Pair_Statement Period
-            filename_parts = ['Matched_Transactions']
+            # Generate filename: Auto_Matched_Transactions_Company Pair_Statement Period
+            filename_parts = ['Auto_Matched_Transactions']
             
             if lender_company and borrower_company:
                 company_pair = f"{lender_company}-{borrower_company}"
@@ -220,7 +245,7 @@ class ExportService:
             'Lender_UID': row.get(f'{prefix}uid' if prefix else 'uid', ''),
             'Lender_Date': row.get(f'{prefix}Date' if prefix else 'Date', ''),
             'Lender_Particulars': row.get(f'{prefix}particulars' if prefix else 'Particulars', ''),
-            'Lender_Debit': row.get(f'{prefix}Debit' if prefix else 'Debit', 0),
+            'Lender_Debit': self.format_amount(row.get(f'{prefix}Debit' if prefix else 'Debit', 0)),
             'Lender_Vch_Type': row.get(f'{prefix}Vch_Type' if prefix else 'Vch_Type', ''),
             'Lender_Role': 'Lender'
         }
@@ -233,7 +258,7 @@ class ExportService:
             'Borrower_UID': row.get(f'{prefix}uid' if prefix else 'uid', ''),
             'Borrower_Date': row.get(f'{prefix}Date' if prefix else 'Date', ''),
             'Borrower_Particulars': row.get(f'{prefix}particulars' if prefix else 'Particulars', ''),
-            'Borrower_Credit': row.get(f'{prefix}Credit' if prefix else 'Credit', 0),
+            'Borrower_Credit': self.format_amount(row.get(f'{prefix}Credit' if prefix else 'Credit', 0)),
             'Borrower_Vch_Type': row.get(f'{prefix}Vch_Type' if prefix else 'Vch_Type', ''),
             'Borrower_Role': 'Borrower'
         }
@@ -362,20 +387,54 @@ class ExportService:
             cell.alignment = header_alignment
             cell.border = border
         
-        # Auto-adjust column widths
-        for column in worksheet.columns:
-            max_length = 0
-            column_letter = get_column_letter(column[0].column)
+        # Define text wrapping columns and their properties
+        text_wrap_columns = {
+            'Lender_Particulars': {'width': 40, 'height': 60},
+            'Borrower_Particulars': {'width': 40, 'height': 60},
+            'Audit_Info': {'width': 35, 'height': 80}
+        }
+        
+        # Apply text wrapping and formatting for specific columns
+        for col_idx, col in enumerate(worksheet.columns, 1):
+            column_letter = get_column_letter(col[0].column)
+            header_value = str(col[0].value) if col[0].value else ''
             
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            
-            adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters
-            worksheet.column_dimensions[column_letter].width = adjusted_width
+            # Check if this column needs text wrapping
+            if header_value in text_wrap_columns:
+                # Set column width for text wrap columns
+                worksheet.column_dimensions[column_letter].width = text_wrap_columns[header_value]['width']
+                
+                # Apply text wrapping to all cells in this column (including header)
+                for cell in col:
+                    # Create text wrap alignment
+                    wrap_alignment = Alignment(
+                        horizontal='left',
+                        vertical='top',
+                        wrap_text=True
+                    )
+                    cell.alignment = wrap_alignment
+                    
+                    # Set row height for better text wrapping display
+                    if cell.row > 1:  # Skip header row for height adjustment
+                        worksheet.row_dimensions[cell.row].height = text_wrap_columns[header_value]['height']
+            else:
+                # For non-text wrap columns, apply standard formatting
+                # Auto-adjust column width based on content
+                max_length = 0
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                
+                adjusted_width = min(max_length + 2, 50)  # Cap at 50 characters
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+                
+                # Apply standard alignment for non-text wrap columns
+                for cell in col:
+                    if cell.row > 1:  # Skip header row
+                        cell.alignment = Alignment(horizontal='left', vertical='top')
         
         # Freeze header row
         worksheet.freeze_panes = "A2"

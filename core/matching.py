@@ -26,10 +26,27 @@ def extract_lc(particulars: str) -> Optional[str]:
     if not particulars:
         return None
     
-    # Pattern for LC numbers: L/C-123/456 or similar formats
-    lc_pattern = r'\bL/C[-\s]?\d+[/\s]?\d*\b'
+    # Pattern for LC numbers: L/C-123/456, LC-123/456, or similar formats
+    lc_pattern = r'\b(?:L/C|LC)[-\s]?\d+[/\s]?\d*\b'
     match = re.search(lc_pattern, particulars.upper())
     return match.group() if match else None
+
+
+def normalize_lc_number(lc_string: str) -> str:
+    """Normalize LC number to consistent format for comparison.
+    
+    Converts both 'L/C-123/456' and 'LC-123/456' to 'LC-123/456'
+    """
+    if not lc_string:
+        return ""
+    
+    # Remove any extra spaces and normalize to uppercase
+    normalized = lc_string.upper().strip()
+    
+    # Replace 'L/C' with 'LC' for consistent comparison
+    normalized = normalized.replace('L/C', 'LC')
+    
+    return normalized
 
 
 # Helper: detect the specific Time Loan repayment phrase
@@ -433,7 +450,7 @@ def extract_common_text(text1: str, text2: str) -> Optional[str]:
                 break
 
     if unique_phrases:
-        # Format output to show word count and content
+        # Return common text with word count in clean format
         result = []
         for phrase in unique_phrases:
             word_count = len(phrase.split())
@@ -614,7 +631,7 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
                 
                 # LC match
-                if lender_lc and borrower_lc and lender_lc == borrower_lc:
+                if lender_lc and borrower_lc and normalize_lc_number(lender_lc) == normalize_lc_number(borrower_lc):
                     matches.append({
                         'lender_uid': lender['uid'],
                         'borrower_uid': borrower['uid'],

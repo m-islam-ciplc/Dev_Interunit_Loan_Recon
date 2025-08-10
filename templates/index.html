@@ -242,9 +242,12 @@
                     <button type="button" class="btn btn-sm btn-secondary" id="view-matched-btn" onclick="loadMatchesInViewer()" disabled>
                         <i class="bi bi-eye me-2"></i>View Matched Results
                     </button>
-                    <button type="button" class="btn btn-sm btn-secondary" id="download-matched-btn" onclick="downloadMatches()" disabled>
-                        <i class="bi bi-download me-2"></i>Download Matched Results
+                    <button type="button" class="btn btn-sm btn-secondary" id="download-matched-btn" onclick="downloadAutoMatches()" disabled>
+                        <i class="bi bi-download me-2"></i>Download Auto-Matched Results
                     </button>
+                    <small class="text-muted d-block mt-1">
+                        <i class="bi bi-info-circle me-1"></i>Only high-confidence auto-matches (PO, LC, LOAN_ID, FINAL_SETTLEMENT, INTERUNIT_LOAN) are included in downloads
+                    </small>
                 </div>
                 <div id="matched-results-display" style="margin-top:20px;"></div>
             </div>
