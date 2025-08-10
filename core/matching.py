@@ -4,6 +4,7 @@ Extracted from core/database.py to separate concerns.
 """
 import re
 from typing import List, Dict, Any, Optional, Tuple
+from core.bank_config import get_bank_name, get_account_reference_patterns
 
 
 def extract_po(particulars: str) -> Optional[str]:
@@ -35,7 +36,7 @@ def extract_lc(particulars: str) -> Optional[str]:
 def normalize_lc_number(lc_string: str) -> str:
     """Normalize LC number to consistent format for comparison.
     
-    Converts both 'L/C-123/456' and 'LC-123/456' to 'LC-123/456'
+    Converts both 'L/C' with 'LC' for consistent comparison
     """
     if not lc_string:
         return ""
@@ -118,12 +119,8 @@ def extract_account_number(particulars: str) -> Optional[Dict[str, Any]]:
         return None
     
     # Pattern for account number references: #11026, MDBL#11026, OBL#8826, etc.
-    # Look for 5-digit numbers preceded by # or bank code#
-    account_patterns = [
-        r'([A-Z]{2,4})#(\d{4,5})\b',  # MDBL#11026, OBL#8826 (4-5 digits)
-        r'([A-Za-z\s]+)#(\d{4,5})\b',  # Midland Bank#11026
-        r'#(\d{4,5})\b',  # #11026 (fallback, 4-5 digits)
-    ]
+    # Look for 4-6 digit numbers preceded by # or bank code#
+    account_patterns = get_account_reference_patterns()
     
     for i, pattern in enumerate(account_patterns):
         try:
@@ -138,31 +135,8 @@ def extract_account_number(particulars: str) -> Optional[Dict[str, Any]]:
                     bank_code = match.group(1).strip()
                     account_number = match.group(2)
                 
-                # Normalize bank codes
-                bank_mapping = {
-                    'MDBL': 'MIDLAND BANK',
-                    'MIDLAND': 'MIDLAND BANK',
-                    'MIDLAND BANK': 'MIDLAND BANK',
-                    'OBL': 'ONE BANK',
-                    'ONE BANK': 'ONE BANK',
-                    'EBL': 'EASTERN BANK',
-                    'EASTERN BANK': 'EASTERN BANK',
-                    'DBL': 'DUTCH BANGLA BANK',
-                    'DUTCH BANGLA': 'DUTCH BANGLA BANK',
-                    'BBL': 'BRAC BANK',
-                    'BRAC': 'BRAC BANK',
-                    'PBL': 'PRIME BANK',
-                    'PRIME': 'PRIME BANK',
-                    'MTBL': 'MUTUAL TRUST BANK',
-                    'MUTUAL TRUST': 'MUTUAL TRUST BANK',
-                    'MBL': 'MIDLAND BANK',
-                    'NBL': 'NATIONAL BANK',
-                    'SBL': 'STANDARD BANK',
-                    'UBL': 'UNITED BANK',
-                    'CBL': 'CITY BANK'
-                }
-                
-                normalized_bank = bank_mapping.get(bank_code.upper(), bank_code) if bank_code else None
+                # Normalize bank codes using the bank configuration module
+                normalized_bank = get_bank_name(bank_code) if bank_code else None
                 
                 return {
                     'account_number': account_number,
@@ -467,6 +441,64 @@ def extract_common_text(text1: str, text2: str) -> Optional[str]:
     return None
 
 
+def extract_bank_name_from_account(particulars: str, account_match) -> Optional[str]:
+    """Extract and validate bank name from account match."""
+    if not account_match or not particulars:
+        return None
+    
+    # Extract bank name from the first group if available
+    if len(account_match.groups()) >= 2:
+        bank_name = account_match.group(1).strip()
+    else:
+        # If no groups, try to extract bank name from the beginning of the match
+        full_match = account_match.group(0)
+        # Look for bank name before the account number
+        bank_pattern = r'^([A-Za-z\s-]+[A-Za-z])'
+        bank_match = re.search(bank_pattern, full_match)
+        if bank_match:
+            bank_name = bank_match.group(1).strip()
+        else:
+            return None
+    
+    # Normalize the bank name using the bank configuration
+    normalized_bank = get_bank_name(bank_name)
+    return normalized_bank
+
+def extract_and_validate_bank_reference(particulars: str) -> Optional[Dict[str, Any]]:
+    """Extract and validate bank reference from patterns like PBL#1833, MTBL#11026.
+    
+    Returns:
+        Dict with keys: 'bank_code', 'account_ref', 'full_bank_name', 'is_valid'
+        None if no valid bank reference found
+    """
+    if not particulars:
+        return None
+    
+    # Pattern to match bank code followed by # and account reference
+    # Examples: PBL#1833, MTBL#11026, MDBL#11026
+    bank_ref_pattern = r'([A-Z]{2,4})#(\d{4,6})\b'
+    match = re.search(bank_ref_pattern, particulars)
+    
+    if not match:
+        return None
+    
+    bank_code = match.group(1).strip()
+    account_ref = match.group(2).strip()
+    
+    # Look up the full bank name using the existing BANK_MAPPING
+    from core.bank_config import get_bank_name
+    full_bank_name = get_bank_name(bank_code)
+    
+    # Check if this bank code is valid (exists in our mapping)
+    is_valid = full_bank_name is not None and full_bank_name != bank_code
+    
+    return {
+        'bank_code': bank_code,
+        'account_ref': account_ref,
+        'full_bank_name': full_bank_name,
+        'is_valid': is_valid
+    }
+
 def extract_phrases(text: str, min_words: int = 20, max_words: int = 50) -> set:
     """Extract phrases of 20-50 words from text, including numbers and punctuation.
     
@@ -646,6 +678,7 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 
                 # Interunit Loan match (auto-confirmed, runs after PO and LC)
                 # Two-way cross-reference matching for interunit loan transactions
+                # IMPORTANT: Banks must be in dictionary before allowing interunit loan matches
                 lender_particulars = lender.get('Particulars', '')
                 borrower_particulars = borrower.get('Particulars', '')
                 
@@ -672,7 +705,7 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     borrower_account_match = None
                     
                     # Pattern 1: For lender - extract full account number after bank name
-                    lender_account_match = re.search(r'([A-Za-z\s-]+[A-Za-z])-?[A-Za-z0-9/-]*(\d{13})', lender_particulars)
+                    lender_account_match = re.search(r'([A-Za-z\s-]+[A-Za-z])-?[A-Za-z0-9/-]*(\d{13,16})', lender_particulars)
                     # Pattern 2: For borrower - extract hyphenated account number
                     borrower_account_match = re.search(r'([A-Za-z\s-]+[A-Za-z])-?[A-Za-z0-9/-]*(\d{3}-\d{10})', borrower_particulars)
                     
@@ -682,31 +715,27 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     if not borrower_account_match:
                         borrower_account_match = re.search(r'([A-Za-z\s-]+[A-Za-z])-?[A-Za-z0-9/-]*(\d{10,})', borrower_particulars)
                     
-                    # Manual extraction for specific patterns
+                    # If still not found, try more generic patterns
                     if not lender_account_match:
-                        # Try to extract from "MTBL-SND-A/C-1310000003858"
-                        lender_account_match = re.search(r'MTBL-SND-A/C-(\d{13})', lender_particulars)
-                    if not borrower_account_match:
-                        # Try to extract from "Mutual Trust Bank Ltd-SND-002-0320004355"
-                        borrower_account_match = re.search(r'Mutual Trust Bank Ltd-SND-(\d{3}-\d{10})', borrower_particulars)
-                    
-                    # If still not found, try more specific patterns
-                    if not lender_account_match:
-                        # Try to extract from any pattern with 13 digits
-                        lender_account_match = re.search(r'(\d{13})', lender_particulars)
+                        # Try to extract from any pattern with 13-16 digits
+                        lender_account_match = re.search(r'(\d{13,16})', lender_particulars)
                     if not borrower_account_match:
                         # Try to extract from any pattern with hyphenated account
                         borrower_account_match = re.search(r'(\d{3}-\d{10})', borrower_particulars)
                     
-                    # Additional patterns for Prime Bank accounts
-                    if not lender_account_match:
-                        # Try to extract from "Prime Bank Limited-SND-2126318011502"
-                        lender_account_match = re.search(r'Prime Bank Limited-SND-(\d{13})', lender_particulars)
-                    if not borrower_account_match:
-                        # Try to extract from "Prime Bank-CD-2126117010855"
-                        borrower_account_match = re.search(r'Prime Bank-CD-(\d{13})', borrower_particulars)
-                    
+                    # CRITICAL: Check if both banks are in the dictionary before proceeding
                     if lender_account_match and borrower_account_match:
+                        # Extract and validate bank names
+                        lender_bank = extract_bank_name_from_account(lender_particulars, lender_account_match)
+                        borrower_bank = extract_bank_name_from_account(borrower_particulars, borrower_account_match)
+                        
+                        # Only proceed if both banks are properly identified and in the dictionary
+                        if not lender_bank or not borrower_bank:
+                            # Skip this match - banks not properly identified
+                            continue
+                        
+                        # Note: Interunit loans can be between different branches/units of the same bank
+                        # No restriction on same bank - removed the previous limitation
                         # Extract last 4-5 digits from both account numbers
                         if len(lender_account_match.groups()) >= 2:
                             lender_account_full = lender_account_match.group(2)
@@ -730,17 +759,26 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         cross_ref_2_found = borrower_last_digits in lender_particulars
                         
                         # Alternative: Look for the shortened references in the narrations
+                        # This validates that the bank reference (e.g., PBL#1833) corresponds to the actual bank
                         if not cross_ref_1_found:
-                            # Look for any 4-5 digit number followed by # in borrower narration
-                            borrower_short_ref = re.search(r'#(\d{4,5})', borrower_particulars)
-                            if borrower_short_ref:
-                                cross_ref_1_found = borrower_short_ref.group(1) in lender_last_digits
+                            # Look for bank reference in borrower narration (e.g., PBL#1833)
+                            borrower_bank_ref = extract_and_validate_bank_reference(borrower_particulars)
+                            if borrower_bank_ref and borrower_bank_ref['is_valid']:
+                                # Check if the bank reference matches the lender's bank
+                                if borrower_bank_ref['full_bank_name'] == lender_bank:
+                                    # Validate that the account reference matches lender's last digits
+                                    if borrower_bank_ref['account_ref'] in lender_last_digits:
+                                        cross_ref_1_found = True
                         
                         if not cross_ref_2_found:
-                            # Look for any 4-5 digit number followed by # in lender narration
-                            lender_short_ref = re.search(r'#(\d{4,5})', lender_particulars)
-                            if lender_short_ref:
-                                cross_ref_2_found = lender_short_ref.group(1) in borrower_last_digits
+                            # Look for bank reference in lender narration (e.g., MTBL#11026)
+                            lender_bank_ref = extract_and_validate_bank_reference(lender_particulars)
+                            if lender_bank_ref and lender_bank_ref['is_valid']:
+                                # Check if the bank reference matches the borrower's bank
+                                if lender_bank_ref['full_bank_name'] == borrower_bank:
+                                    # Validate that the account reference matches borrower's last digits
+                                    if lender_bank_ref['account_ref'] in borrower_last_digits:
+                                        cross_ref_2_found = True
                         
                         # Both cross-references must be found
                         if cross_ref_1_found and cross_ref_2_found:
@@ -754,21 +792,28 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                                 'lender_last_digits': lender_last_digits,
                                 'borrower_last_digits': borrower_last_digits,
                                 'audit_trail': {
-                                    'lender_reference': f"{lender_account_match.group(1) if len(lender_account_match.groups()) >= 1 else 'Unknown'}-{lender_account_full}",
-                                    'borrower_reference': f"{borrower_account_match.group(1) if len(borrower_account_match.groups()) >= 1 else 'Unknown'}-{borrower_account_full}",
+                                    'lender_reference': f"{lender_bank}-{lender_account_full}",
+                                    'borrower_reference': f"{borrower_bank}-{borrower_account_full}",
                                     'match_reason': f"Interunit loan cross-reference match: {lender_last_digits} ↔ {borrower_last_digits}",
                                     'keywords': {
                                         'lender_interunit_keywords': ['amount paid as interunit loan', 'interunit fund transfer'],
                                         'borrower_interunit_keywords': ['amount received as interunit loan', 'interunit fund transfer'],
-                                        'lender_account_patterns': ['MTBL-SND-A/C-', 'Prime Bank Limited-SND-', 'Mutual Trust Bank Ltd-SND-'],
-                                        'cross_reference_patterns': ['#\\d{4,5}']
+                                        'account_patterns': ['generic bank name + account number', 'hyphenated account format'],
+                                        'cross_reference_patterns': ['BANK_CODE#\\d{4,6} (e.g., PBL#1833, MTBL#11026)']
                                     },
                                     'validation': {
                                         'lender_interunit': is_lender_interunit,
                                         'borrower_interunit': is_borrower_interunit,
                                         'cross_reference_1': cross_ref_1_found,
                                         'cross_reference_2': cross_ref_2_found,
-                                        'interunit_loan_transaction': True
+                                        'interunit_loan_transaction': True,
+                                        'lender_bank_validated': lender_bank,
+                                        'borrower_bank_validated': borrower_bank,
+                                        'banks_different': lender_bank != borrower_bank,  # Note: Can be same bank for interunit loans
+                                        'bank_reference_validation': {
+                                            'lender_bank_ref': extract_and_validate_bank_reference(lender_particulars),
+                                            'borrower_bank_ref': extract_and_validate_bank_reference(borrower_particulars)
+                                        }
                                     }
                                 }
                             })
