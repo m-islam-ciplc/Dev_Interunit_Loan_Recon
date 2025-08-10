@@ -194,8 +194,7 @@ def update_matches(matches):
             # Store audit information as JSON
             audit_info = {
                 'match_type': match['match_type'],
-                'match_method': match_method,
-                'matched_text': None
+                'match_method': match_method
             }
             
             # Prepare keywords for database storage

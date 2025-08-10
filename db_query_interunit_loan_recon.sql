@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS tally_data (
     match_status VARCHAR(32),
     matched_with VARCHAR(64),
     date_matched DATETIME,
-    keywords TEXT,  -- Will be deprecated, use audit_info instead
     match_method VARCHAR(26),  -- 'exact' or 'jaccard'
     audit_info JSON,  -- Stores structured match information including type, method, keywords, and jaccard score
     role VARCHAR(16),
