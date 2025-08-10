@@ -693,7 +693,14 @@ async function loadMatchesInViewer() {
         const result = await response.json();
         
         if (response.ok) {
-            displayMatches(result.matches, 'matched-results-display');
+            // Pass filter context to displayMatches for context header
+            const filterContext = {
+                lenderCompany: lenderCompany,
+                borrowerCompany: borrowerCompany,
+                month: month,
+                year: year
+            };
+            displayMatches(result.matches, 'matched-results-display', filterContext);
         } else {
             // Create error notification
             let errorMessage = '<div class="alert alert-danger" role="alert">';
@@ -872,7 +879,7 @@ function deduplicateMatches(matches) {
     return uniqueMatches;
 }
 
-function displayMatches(matches, targetDivId = 'reconciliation-result') {
+function displayMatches(matches, targetDivId = 'reconciliation-result', filterContext = null) {
     const resultDiv = document.getElementById(targetDivId);
     
     if (!matches || matches.length === 0) {
@@ -962,8 +969,41 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
         }
     }
     
+    // Build context header if filter context is provided
+    let contextHeader = '';
+    if (filterContext && (filterContext.lenderCompany || filterContext.month)) {
+        contextHeader = `
+            <div class="alert alert-primary mb-3" role="alert">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2"><i class="bi bi-funnel me-2"></i>Results Filter</h6>
+                        <div class="row">
+                            ${filterContext.lenderCompany ? `
+                                <div class="col-md-6">
+                                    <strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}
+                                </div>
+                            ` : ''}
+                            ${filterContext.month ? `
+                                <div class="col-md-6">
+                                    <strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Showing ${uniqueMatches.length} matched transactions
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     let tableHTML = `
         <div class="matched-transactions-wrapper">
+            ${contextHeader}
             <div class="matched-header">
                 <h6><i class="bi bi-link-45deg"></i> Matched Transactions (${uniqueMatches.length} transactions)</h6>
             </div>
@@ -1624,7 +1664,14 @@ async function loadUnmatchedResults() {
         const result = await response.json();
         
         if (response.ok) {
-            displayUnmatchedResults(result.unmatched);
+            // Pass filter context to displayUnmatchedResults for context header
+            const filterContext = {
+                lenderCompany: lenderCompany,
+                borrowerCompany: borrowerCompany,
+                month: month,
+                year: year
+            };
+            displayUnmatchedResults(result.unmatched, filterContext);
         } else {
             resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${result.error}</div>`;
         }
@@ -1681,7 +1728,7 @@ async function downloadUnmatchedResults() {
 }
 
 // Display unmatched results
-function displayUnmatchedResults(unmatched) {
+function displayUnmatchedResults(unmatched, filterContext = null) {
     const displayDiv = document.getElementById('unmatched-results-display');
     
     if (!unmatched || unmatched.length === 0) {
@@ -1694,8 +1741,41 @@ function displayUnmatchedResults(unmatched) {
         return;
     }
     
+    // Build context header if filter context is provided
+    let contextHeader = '';
+    if (filterContext && (filterContext.lenderCompany || filterContext.month)) {
+        contextHeader = `
+            <div class="alert alert-primary mb-3" role="alert">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-2"><i class="bi bi-funnel me-2"></i>Results Filter</h6>
+                        <div class="row">
+                            ${filterContext.lenderCompany ? `
+                                <div class="col-md-6">
+                                    <strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}
+                                </div>
+                            ` : ''}
+                            ${filterContext.month ? `
+                                <div class="col-md-6">
+                                    <strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Showing ${unmatched.length} unmatched transactions
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     let tableHTML = `
         <div class="unmatched-transactions-wrapper">
+            ${contextHeader}
             <div class="unmatched-header">
                 <h6><i class="bi bi-link-45deg"></i> Unmatched Transactions (${unmatched.length} records)</h6>
             </div>
