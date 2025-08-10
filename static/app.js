@@ -1551,15 +1551,32 @@ function displayPairs(pairs) {
     `;
     
     pairs.forEach(pair => {
-        const uploadDate = new Date(pair.upload_date).toLocaleString();
+        // Handle date formatting with error checking
+        let uploadDate = 'Invalid Date';
+        try {
+            if (pair.upload_date) {
+                const date = new Date(pair.upload_date);
+                if (!isNaN(date.getTime())) {
+                    uploadDate = date.toLocaleString();
+                }
+            }
+        } catch (e) {
+            console.warn('Error formatting date:', e);
+        }
+        
+        // Handle record count with fallback
+        const recordCount = pair.record_count || 0;
+        
+        // Handle pair_id with fallback
+        const pairId = pair.pair_id || 'Unknown';
         
         tableHTML += `
             <tr>
-                <td data-column="pair_id" class="uid-cell"><code>${pair.pair_id}</code></td>
+                <td data-column="pair_id" class="uid-cell"><code>${pairId}</code></td>
                 <td data-column="upload_date" class="date-cell">${uploadDate}</td>
-                <td data-column="record_count" class="amount-cell"><span class="badge bg-info">${pair.record_count}</span></td>
+                <td data-column="record_count" class="amount-cell"><span class="badge bg-info">${recordCount}</span></td>
                 <td data-column="actions">
-                    <a href="#" onclick="viewPairData('${pair.pair_id}')" class="text-primary text-decoration-none">
+                    <a href="#" onclick="viewPairData('${pairId}')" class="text-primary text-decoration-none">
                         <i class="bi bi-eye"></i> View
                     </a>
                 </td>

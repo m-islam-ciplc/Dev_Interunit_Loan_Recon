@@ -809,29 +809,52 @@ def get_data_by_pair_id(pair_id):
         return []
 
 def get_all_pair_ids():
-    """Get all unique pair IDs"""
+    """Get all unique pair IDs and individual uploads"""
     try:
         ensure_table_exists('tally_data')
         
-        sql = """
+        # First, try to get file pairs
+        pairs_sql = """
         SELECT DISTINCT pair_id, 
                COUNT(*) as record_count,
                MIN(input_date) as upload_date
         FROM tally_data 
-        WHERE pair_id IS NOT NULL
+        WHERE pair_id IS NOT NULL AND pair_id != ''
         GROUP BY pair_id
         ORDER BY upload_date DESC
         """
         
-        df = pd.read_sql(sql, engine)
+        df_pairs = pd.read_sql(pairs_sql, engine)
+        
+        # Also get individual file uploads (records without pair_id but with input_date)
+        individual_sql = """
+        SELECT 
+               CONCAT('individual_', DATE(input_date)) as pair_id,
+               COUNT(*) as record_count,
+               MIN(input_date) as upload_date
+        FROM tally_data 
+        WHERE (pair_id IS NULL OR pair_id = '') AND input_date IS NOT NULL
+        GROUP BY DATE(input_date)
+        ORDER BY upload_date DESC
+        """
+        
+        try:
+            df_individual = pd.read_sql(individual_sql, engine)
+        except Exception as e:
+            print(f"Warning: Could not get individual uploads: {e}")
+            df_individual = pd.DataFrame()
+        
+        # Combine both results
+        df_combined = pd.concat([df_pairs, df_individual], ignore_index=True)
         
         pairs = []
-        for _, row in df.iterrows():
-            pairs.append({
+        for _, row in df_combined.iterrows():
+            pair_data = {
                 'pair_id': row['pair_id'],
                 'record_count': row['record_count'],
                 'upload_date': row['upload_date']
-            })
+            }
+            pairs.append(pair_data)
         
         return pairs
     except Exception as e:

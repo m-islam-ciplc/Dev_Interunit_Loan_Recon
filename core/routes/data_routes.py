@@ -94,9 +94,9 @@ def get_manual_pairs():
 
 @data_bp.route('/pairs', methods=['GET'])
 def get_all_pairs():
-    """Get all company pairs"""
+    """Get all upload pairs with pair IDs"""
     try:
-        pairs = database.get_company_pairs()
+        pairs = database.get_all_pair_ids()
         return jsonify({'pairs': pairs})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
