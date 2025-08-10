@@ -39,9 +39,25 @@ class ExportService:
             # Process and format data
             export_rows = self._process_matched_data(matches)
             
-            # Create Excel file
+            # Create Excel file with descriptive filename
             df = pd.DataFrame(export_rows)
-            export_filename = f"matched_transactions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            
+            # Generate filename: Matched_Transactions_Company Pair_Statement Period
+            filename_parts = ['Matched_Transactions']
+            
+            if lender_company and borrower_company:
+                company_pair = f"{lender_company}-{borrower_company}"
+                filename_parts.append(company_pair)
+            
+            if month and year:
+                statement_period = f"{month}_{year}"
+                filename_parts.append(statement_period)
+            
+            # Fallback to timestamp if no specific filters
+            if len(filename_parts) == 1:
+                filename_parts.append(datetime.now().strftime('%Y%m%d_%H%M%S'))
+            
+            export_filename = f"{'_'.join(filename_parts)}.xlsx"
             export_path = os.path.join(self.export_folder, export_filename)
             
             # Apply formatting
@@ -71,7 +87,23 @@ class ExportService:
             
             # Create DataFrame
             df = pd.DataFrame(unmatched)
-            export_filename = f"unmatched_transactions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            
+            # Generate filename: Unmatched_Transactions_Company Pair_Statement Period
+            filename_parts = ['Unmatched_Transactions']
+            
+            if lender_company and borrower_company:
+                company_pair = f"{lender_company}-{borrower_company}"
+                filename_parts.append(company_pair)
+            
+            if month and year:
+                statement_period = f"{month}_{year}"
+                filename_parts.append(statement_period)
+            
+            # Fallback to timestamp if no specific filters
+            if len(filename_parts) == 1:
+                filename_parts.append(datetime.now().strftime('%Y%m%d_%H%M%S'))
+            
+            export_filename = f"{'_'.join(filename_parts)}.xlsx"
             export_path = os.path.join(self.export_folder, export_filename)
             
             # Apply formatting
@@ -93,7 +125,23 @@ class ExportService:
                 return jsonify({'error': 'No data found'}), 404
             
             df = pd.DataFrame(data)
-            export_filename = f"tally_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            
+            # Generate filename: Tally_Data_Filters_Statement Period
+            filename_parts = ['Tally_Data']
+            
+            if filters.get('lender') and filters.get('borrower'):
+                company_pair = f"{filters['lender']}-{filters['borrower']}"
+                filename_parts.append(company_pair)
+            
+            if filters.get('statement_month') and filters.get('statement_year'):
+                statement_period = f"{filters['statement_month']}_{filters['statement_year']}"
+                filename_parts.append(statement_period)
+            
+            # Fallback to timestamp if no specific filters
+            if len(filename_parts) == 1:
+                filename_parts.append(datetime.now().strftime('%Y%m%d_%H%M%S'))
+            
+            export_filename = f"{'_'.join(filename_parts)}.xlsx"
             export_path = os.path.join(self.export_folder, export_filename)
             
             # Simple export without special formatting

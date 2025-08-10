@@ -761,35 +761,10 @@ async function downloadMatches() {
             url += '?' + params.join('&');
         }
         
-        const response = await fetch(url);
-        
-        if (response.ok) {
-            // Get the filename from the response headers
-            const contentDisposition = response.headers.get('content-disposition');
-            let filename = 'matched_transactions.xlsx';
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (filenameMatch) {
-                    filename = filenameMatch[1];
-                }
-            }
-            
-            // Create blob and download
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(downloadUrl);
-        } else {
-            const result = await response.json();
-            showNotification(`Failed to download: ${result.error}`, 'error');
-        }
+        // Use browser navigation to download (same approach as unmatched)
+        window.location.href = url;
     } catch (error) {
-        showNotification(`Failed to download: ${error.message}`, 'error');
+        console.error('Error downloading matched results:', error);
     }
 }
 
