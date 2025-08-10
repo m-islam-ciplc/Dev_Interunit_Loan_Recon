@@ -847,7 +847,7 @@ function formatAuditInfo(auditInfoStr) {
                 // Get the actual matched text from any field that might have it
                 const matchedText = auditInfo.common_text || auditInfo.matched_text || auditInfo.matched_phrase || auditInfo.keywords || '';
                 if (matchedText) {
-                    formattedInfo += `Matched Text: "${matchedText}"\n`;
+                    formattedInfo += `Matched Text: ${matchedText}\n`;
                 }
                 if (auditInfo.lender_amount) {
                     formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
