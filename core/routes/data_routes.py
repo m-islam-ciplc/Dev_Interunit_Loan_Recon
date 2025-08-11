@@ -23,7 +23,9 @@ def get_data():
         filters = {k: v for k, v in filters.items() if v is not None}
         
         data = database.get_data(filters)
-        return jsonify({'data': data})
+        # Provide explicit DB column order for the frontend table rendering
+        column_order = database.get_column_order()
+        return jsonify({'data': data, 'column_order': column_order})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
