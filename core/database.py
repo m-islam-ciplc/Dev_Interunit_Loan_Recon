@@ -1020,7 +1020,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         
         debug_result = conn.execute(text(debug_query), debug_params)
         total_matches = debug_result.fetchone()[0]
-        print(f"DEBUG: Total matches found: {total_matches}")
+
         
         # Main query
         query = '''
@@ -1060,7 +1060,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             record = dict(row._mapping)
             records.append(record)
         
-        print(f"DEBUG: Records returned: {len(records)}")
+
         
         # Debug: Check for records with NULL matched_with
         null_join_query = '''
@@ -1086,7 +1086,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         
         null_result = conn.execute(text(null_join_query), null_params)
         null_joins = null_result.fetchone()[0]
-        print(f"DEBUG: Records with NULL matched_with: {null_joins}")
+
         
         # Show which specific UIDs have NULL matched_with
         if null_joins > 0:
@@ -1107,10 +1107,9 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             
             null_details_result = conn.execute(text(null_details_query), null_params)
             for row in null_details_result:
-                print(f"DEBUG: NULL matched_with record: {row.uid} - {row.lender} ↔ {row.borrower}")
+                pass
         
         # Find which match is incomplete (missing one side)
-        print("DEBUG: Analyzing match completeness...")
         all_matched_uids = set()
         for record in records:
             if record['uid']:
@@ -1118,9 +1117,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             if record['matched_uid']:
                 all_matched_uids.add(record['matched_uid'])
         
-        print(f"DEBUG: Total unique UIDs in matches: {len(all_matched_uids)}")
-        print(f"DEBUG: Expected UIDs for 9 matches: 18")
-        print(f"DEBUG: Missing UIDs: {18 - len(all_matched_uids)}")
+
         
         # Find which UID is missing
         all_uids_in_db_query = '''
@@ -1141,11 +1138,9 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         
         missing_uids = all_uids_in_db - all_matched_uids
         if missing_uids:
-            print(f"DEBUG: Missing UIDs from matches: {missing_uids}")
+            pass
         
         # Check for records that exist but don't appear in JOIN results
-        print(f"DEBUG: All UIDs in DB: {len(all_uids_in_db)}")
-        print(f"DEBUG: UIDs in JOIN results: {len(all_matched_uids)}")
         
         # Find records that have matched_with but the matched record doesn't exist
         orphaned_query = '''
@@ -1168,9 +1163,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         orphaned_result = conn.execute(text(orphaned_query), params)
         orphaned_records = list(orphaned_result)
         if orphaned_records:
-            print(f"DEBUG: Orphaned records (matched_with points to non-existent record): {len(orphaned_records)}")
-            for record in orphaned_records:
-                print(f"DEBUG: Orphaned: {record.uid} -> {record.matched_with}")
+            pass
         
         return records 
 

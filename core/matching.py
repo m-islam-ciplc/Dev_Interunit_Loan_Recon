@@ -18,7 +18,7 @@ def extract_po(particulars: str) -> Optional[str]:
         match = re.search(po_pattern, particulars.upper())
         return match.group() if match else None
     except Exception as e:
-        print(f"DEBUG: PO regex error: {e} with pattern '{po_pattern}' and text '{particulars}'")
+
         return None
 
 
@@ -145,7 +145,7 @@ def extract_account_number(particulars: str) -> Optional[Dict[str, Any]]:
                     'full_reference': match.group()
                 }
         except Exception as e:
-            print(f"DEBUG: Account regex error pattern {i}: {e} with pattern '{pattern}' and text '{particulars}'")
+
             continue
     
     return None
