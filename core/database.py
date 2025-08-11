@@ -394,7 +394,7 @@ def get_matched_data():
                 t2.lender as matched_lender, 
                 t2.borrower as matched_borrower,
                 t2.Particulars as matched_particulars, 
-                t2.Date as matched_date,
+                t2.Date as matched_Date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
                 t2.uid as matched_uid,
@@ -440,7 +440,7 @@ def get_auto_matched_data():
                 t2.lender as matched_lender, 
                 t2.borrower as matched_borrower,
                 t2.Particulars as matched_particulars, 
-                t2.Date as matched_date,
+                t2.Date as matched_Date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
                 t2.uid as matched_uid,
@@ -483,7 +483,7 @@ def get_auto_matched_data_by_companies(lender_company, borrower_company, month=N
                 t2.lender as matched_lender, 
                 t2.borrower as matched_borrower,
                 t2.Particulars as matched_particulars, 
-                t2.Date as matched_date,
+                t2.Date as matched_Date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
                 t2.uid as matched_uid,
@@ -625,7 +625,7 @@ def get_pending_matches():
         result = conn.execute(text("""
             SELECT 
                 t1.*, t2.lender as matched_lender, t2.borrower as matched_borrower,
-               t2.Particulars as matched_particulars, t2.Date as matched_date,
+               t2.Particulars as matched_particulars, t2.Date as matched_Date,
                 t2.Debit as matched_Debit, t2.Credit as matched_Credit,
                 t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
@@ -652,7 +652,7 @@ def get_confirmed_matches():
         result = conn.execute(text("""
             SELECT 
                 t1.*, t2.lender as matched_lender, t2.borrower as matched_borrower,
-               t2.Particulars as matched_particulars, t2.Date as matched_date,
+               t2.Particulars as matched_particulars, t2.Date as matched_Date,
                 t2.Debit as matched_Debit, t2.Credit as matched_Credit,
                 t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
