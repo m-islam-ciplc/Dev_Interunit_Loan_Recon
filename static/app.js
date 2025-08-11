@@ -8,6 +8,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Handle browser back/forward buttons
+window.addEventListener('popstate', function(event) {
+    if (event.state && event.state.tab) {
+        showTab(event.state.tab);
+    }
+});
+
+// Prevent submenu collapse when submenu items are clicked
+document.addEventListener('DOMContentLoaded', function() {
+    const submenuItems = document.querySelectorAll('.submenu-item');
+    submenuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            // Prevent the click from bubbling up to the parent collapse trigger
+            e.stopPropagation();
+            e.preventDefault();
+            
+            // Get the href and navigate programmatically
+            const href = this.getAttribute('href');
+            if (href) {
+                // Use showTab instead of direct navigation to maintain URL structure
+                const tabName = href.substring(1); // Remove the leading slash
+                showTab(tabName);
+            }
+        });
+    });
+});
+
 // Tab switching function
 function showTab(tabName) {
     // Hide all tab panes
@@ -20,6 +47,10 @@ function showTab(tabName) {
     const selectedPane = document.getElementById('pane-' + tabName);
     if (selectedPane) {
         selectedPane.style.display = 'block';
+        
+        // Update URL without page reload
+        const url = '/' + tabName;
+        window.history.pushState({ tab: tabName }, '', url);
         
         // If switching to data-table tab, load data
         if (tabName === 'data-table') {
@@ -153,7 +184,7 @@ async function uploadFile() {
     parseBtn.disabled = true;
     parseBtn.textContent = 'Processing...';
     uploadMsg.textContent = '';
-    uploadResult.innerHTML = '<div style="color: blue;">Uploading file pair...</div>';
+    uploadResult.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Uploading file pair...</div>';
     
     try {
         const response = await fetch('/api/upload-pair', {
@@ -164,7 +195,7 @@ async function uploadFile() {
         const result = await response.json();
         
         if (response.ok) {
-            uploadResult.innerHTML = `<div style="color: green;">File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
+            uploadResult.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>File pair uploaded successfully! ${result.rows_processed} rows processed. Pair ID: <code>${result.pair_id}</code></div>`;
             
             // Reset form
             fileInput1.value = '';
@@ -185,11 +216,11 @@ async function uploadFile() {
             }, 8000);
             
         } else {
-            uploadResult.innerHTML = `<div style="color: red;">Upload failed: ${result.error}</div>`;
+            uploadResult.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${result.error}</div>`;
         }
         
     } catch (error) {
-        uploadResult.innerHTML = `<div style="color: red;">Upload failed: ${error.message}</div>`;
+        uploadResult.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Upload failed: ${error.message}</div>`;
     } finally {
         parseBtn.disabled = false;
         parseBtn.textContent = 'Upload Pair';
@@ -218,8 +249,8 @@ function displayData(data, columnOrder) {
     
     if (!data || data.length === 0) {
         resultDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No data available. Upload a file to get started.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No data available. Upload a file to get started.
             </div>
         `;
         return;
@@ -233,10 +264,40 @@ function displayData(data, columnOrder) {
     
     let tableHTML = `
         <div class="report-table-wrapper" style="max-height: 70vh; overflow-y: auto;">
-            <table class="report-table" style="border-collapse: collapse;">
-                <thead style="position: sticky; top: 0; background-color: #f8f9fa; z-index: 1;">
+            <table class="table matched-transactions-table">
+                <thead>
                     <tr>
-                        ${columns.map(col => `<th style="border: 1px solid #dee2e6; padding: 8px; text-align: left; background-color: #f8f9fa;">${col}</th>`).join('')}
+                        ${columns.map(col => {
+                            // Map column names to data-column attributes and CSS classes
+                            const columnMapping = {
+                                'UID': { attr: 'uid', class: 'uid-cell' },
+                                'uid': { attr: 'uid', class: 'uid-cell' },
+                                'Lender': { attr: 'lender', class: 'lender-cell' },
+                                'lender': { attr: 'lender', class: 'lender-cell' },
+                                'Borrower': { attr: 'borrower', class: 'borrower-cell' },
+                                'borrower': { attr: 'borrower', class: 'borrower-cell' },
+                                'Date': { attr: 'date', class: 'date-cell' },
+                                'date': { attr: 'date', class: 'date-cell' },
+                                'Particulars': { attr: 'particulars', class: 'particulars-cell' },
+                                'particulars': { attr: 'particulars', class: 'particulars-cell' },
+                                'Vch_Type': { attr: 'vch_type', class: 'vch-type-cell' },
+                                'vch_type': { attr: 'vch_type', class: 'vch-type-cell' },
+                                'Vch_No': { attr: 'vch_no', class: 'vch-no-cell' },
+                                'vch_no': { attr: 'vch_no', class: 'vch-no-cell' },
+                                'Debit': { attr: 'debit', class: 'amount-cell' },
+                                'debit': { attr: 'debit', class: 'amount-cell' },
+                                'Credit': { attr: 'credit', class: 'amount-cell' },
+                                'credit': { attr: 'credit', class: 'amount-cell' },
+                                'entered_by': { attr: 'entered_by', class: 'entered-by-cell' },
+                                'input_date': { attr: 'input_date', class: 'input-date-cell' },
+                                'role': { attr: 'role', class: 'role-cell' },
+                                'statement_month': { attr: 'statement_month', class: 'statement-month-cell' },
+                                'statement_year': { attr: 'statement_year', class: 'statement-year-cell' }
+                            };
+                            
+                            const mapping = columnMapping[col] || { attr: col.toLowerCase(), class: '' };
+                            return `<th data-column="${mapping.attr}" class="${mapping.class} text-center">${col}</th>`;
+                        }).join('')}
                     </tr>
                 </thead>
                 <tbody>
@@ -255,22 +316,74 @@ function displayData(data, columnOrder) {
                             value = formatDate(value);
                         }
                     }
-                    return `<td style="border: 1px solid #dee2e6; padding: 8px;">${value}</td>`;
+                    
+                    // Map column names to data-column attributes and CSS classes
+                    const columnMapping = {
+                        'UID': { attr: 'uid', class: 'uid-cell' },
+                        'uid': { attr: 'uid', class: 'uid-cell' },
+                        'Lender': { attr: 'lender', class: 'lender-cell' },
+                        'lender': { attr: 'lender', class: 'lender-cell' },
+                        'Borrower': { attr: 'borrower', class: 'borrower-cell' },
+                        'borrower': { attr: 'borrower', class: 'borrower-cell' },
+                        'Date': { attr: 'date', class: 'date-cell' },
+                        'date': { attr: 'date', class: 'date-cell' },
+                        'Particulars': { attr: 'particulars', class: 'particulars-cell' },
+                        'particulars': { attr: 'particulars', class: 'particulars-cell' },
+                        'Vch_Type': { attr: 'vch_type', class: 'vch-type-cell' },
+                        'vch_type': { attr: 'vch_type', class: 'vch-type-cell' },
+                        'Vch_No': { attr: 'vch_no', class: 'vch-no-cell' },
+                        'vch_no': { attr: 'vch_no', class: 'vch-no-cell' },
+                        'Debit': { attr: 'debit', class: 'amount-cell text-end' },
+                        'debit': { attr: 'debit', class: 'amount-cell text-end' },
+                        'Credit': { attr: 'credit', class: 'amount-cell text-end' },
+                        'credit': { attr: 'credit', class: 'amount-cell text-end' },
+                        'entered_by': { attr: 'entered_by', class: 'entered-by-cell' },
+                        'input_date': { attr: 'input_date', class: 'input-date-cell' },
+                        'role': { attr: 'role', class: 'role-cell' },
+                        'statement_month': { attr: 'statement_month', class: 'statement-month-cell' },
+                        'statement_year': { attr: 'statement_year', class: 'statement-year-cell' }
+                    };
+                    
+                    const mapping = columnMapping[col] || { attr: col.toLowerCase(), class: '' };
+                    return `<td data-column="${mapping.attr}" class="${mapping.class}">${value}</td>`;
                 }).join('')}
             </tr>
         `;
     });
     
     tableHTML += `
-                </tbody>
-            </table>
+            </div>
         </div>
-        <div style="margin-top: 10px; color: #666;">
-            Total records: ${data.length}
+        <div class="alert alert-light mt-2">
+            <i class="bi bi-info-circle me-2"></i>Total records: ${data.length}
         </div>
     `;
     
     resultDiv.innerHTML = tableHTML;
+}
+
+// Helper function to show Bootstrap notifications
+function showNotification(message, type = 'info', targetId = 'reconciliation-result') {
+    const targetDiv = document.getElementById(targetId);
+    if (targetDiv) {
+        const alertClass = type === 'error' ? 'alert-danger' : 
+                          type === 'success' ? 'alert-success' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+        const iconClass = type === 'error' ? 'bi-exclamation-circle' : 
+                         type === 'success' ? 'bi-check-circle' : 
+                         type === 'warning' ? 'bi-exclamation-triangle' : 'bi-info-circle';
+        
+        targetDiv.innerHTML = `<div class="alert ${alertClass}"><i class="bi ${iconClass} me-2"></i>${message}</div>`;
+        
+        // Auto-remove after 5 seconds for success/info messages
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                if (targetDiv.innerHTML.includes(message)) {
+                    targetDiv.innerHTML = '';
+                }
+            }, 5000);
+        }
+    }
 }
 
 // Helper function to get badge class for match status
@@ -283,6 +396,24 @@ function getStatusBadgeClass(status) {
         case 'unmatched':
         default:
             return 'bg-secondary';
+    }
+}
+
+// Helper function to format match method names
+function formatMatchMethod(method) {
+    if (!method) return '';
+    
+    switch(method) {
+        case 'reference_match':
+            return 'Reference Match';
+        case 'similarity_match':
+            return 'Similarity Match';
+        case 'cross_reference':
+            return 'Cross Reference';
+        case 'fallback_match':
+            return 'Fallback Match';
+        default:
+            return method;
     }
 }
 
@@ -562,7 +693,14 @@ async function loadMatchesInViewer() {
         const result = await response.json();
         
         if (response.ok) {
-            displayMatches(result.matches, 'matched-results-display');
+            // Pass filter context to displayMatches for context header
+            const filterContext = {
+                lenderCompany: lenderCompany,
+                borrowerCompany: borrowerCompany,
+                month: month,
+                year: year
+            };
+            displayMatches(result.matches, 'matched-results-display', filterContext);
         } else {
             // Create error notification
             let errorMessage = '<div class="alert alert-danger" role="alert">';
@@ -590,77 +728,7 @@ async function loadMatchesInViewer() {
     }
 }
 
-async function downloadMatches() {
-    try {
-        // Get selected company pair and period
-        const companySelect = document.getElementById('matched-company-pair-select');
-        const periodSelect = document.getElementById('matched-period-select');
-        const companyPair = companySelect ? companySelect.value : '';
-        const period = periodSelect ? periodSelect.value : '';
-        
-        let lenderCompany = '';
-        let borrowerCompany = '';
-        let month = '';
-        let year = '';
-        
-        if (companyPair && companyPair.includes('↔')) {
-            const parts = companyPair.split('↔').map(s => s.trim());
-            lenderCompany = parts[0];
-            borrowerCompany = parts[1];
-        }
-        
-        if (period && period !== '-- All Periods --') {
-            const periodParts = period.split(' ');
-            if (periodParts.length === 2) {
-                month = periodParts[0];
-                year = periodParts[1];
-            }
-        }
-        
-        // Build query string
-        let url = '/api/download-matches';
-        const params = [];
-        if (lenderCompany && borrowerCompany) {
-            params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
-            params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
-        }
-        if (month) params.push(`month=${encodeURIComponent(month)}`);
-        if (year) params.push(`year=${encodeURIComponent(year)}`);
-        if (params.length > 0) {
-            url += '?' + params.join('&');
-        }
-        
-        const response = await fetch(url);
-        
-        if (response.ok) {
-            // Get the filename from the response headers
-            const contentDisposition = response.headers.get('content-disposition');
-            let filename = 'matched_transactions.xlsx';
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (filenameMatch) {
-                    filename = filenameMatch[1];
-                }
-            }
-            
-            // Create blob and download
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = downloadUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(downloadUrl);
-        } else {
-            const result = await response.json();
-            alert(`Failed to download: ${result.error}`);
-        }
-    } catch (error) {
-        alert(`Failed to download: ${error.message}`);
-    }
-}
+
 
 function formatAuditInfo(auditInfoStr) {
     if (!auditInfoStr) return '';
@@ -671,35 +739,114 @@ function formatAuditInfo(auditInfoStr) {
         // Format match type and details based on type
         switch(auditInfo.match_type) {
             case 'PO':
-                formattedInfo += `PO Match\nPO Number: ${auditInfo.keywords}\n`;
+                formattedInfo += `PO Match\n`;
+                if (auditInfo.po_number) {
+                    formattedInfo += `PO Number: ${auditInfo.po_number}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 break;
             case 'LC':
-                formattedInfo += `LC Match\nLC Number: ${auditInfo.keywords}\n`;
+                formattedInfo += `LC Match\n`;
+                if (auditInfo.lc_number) {
+                    formattedInfo += `LC Number: ${auditInfo.lc_number}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 break;
             case 'LOAN_ID':
-                formattedInfo += `Loan ID Match\nLoan ID: ${auditInfo.keywords}\n`;
+                formattedInfo += `Loan ID Match\n`;
+                if (auditInfo.loan_id) {
+                    formattedInfo += `Loan ID: ${auditInfo.loan_id}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 break;
             case 'SALARY':
-                formattedInfo += `Salary Match\nDetails: ${auditInfo.keywords}\n`;
+                formattedInfo += `Salary Match\n`;
+                if (auditInfo.person) {
+                    formattedInfo += `Person: ${auditInfo.person}\n`;
+                }
+                if (auditInfo.period) {
+                    formattedInfo += `Period: ${auditInfo.period}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
                 if (auditInfo.jaccard_score !== undefined) {
                     formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
+                }
+                break;
+            case 'FINAL_SETTLEMENT':
+                formattedInfo += `Final Settlement Match\n`;
+                if (auditInfo.person) {
+                    formattedInfo += `Person: ${auditInfo.person}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
                 }
                 break;
             case 'COMMON_TEXT':
+                formattedInfo += `Common Text Match\n`;
                 // Get the actual matched text from any field that might have it
-                const matchedText = auditInfo.keywords || auditInfo.common_text || auditInfo.matched_text || auditInfo.matched_phrase || '';
+                const matchedText = auditInfo.common_text || auditInfo.matched_text || auditInfo.matched_phrase || auditInfo.keywords || '';
                 if (matchedText) {
-                    formattedInfo += `MATCHED TEXT: "${matchedText}"\n`;
-                    formattedInfo += `(Common Text Match)\n`;
-                } else {
-                    formattedInfo += 'Common Text Match (no text found)\n';
+                    formattedInfo += `Matched Text: ${matchedText}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
                 }
                 if (auditInfo.jaccard_score !== undefined) {
                     formattedInfo += `Similarity: ${(auditInfo.jaccard_score * 100).toFixed(1)}%\n`;
                 }
                 break;
+            case 'INTERUNIT_LOAN':
+                formattedInfo += `Interunit Loan Match\n`;
+                if (auditInfo.lender_reference) {
+                    formattedInfo += `Lender: ${auditInfo.lender_reference}\n`;
+                }
+                if (auditInfo.borrower_reference) {
+                    formattedInfo += `Borrower: ${auditInfo.borrower_reference}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
+                break;
             default:
-                formattedInfo += `Type: ${auditInfo.match_type}\nKeywords: ${auditInfo.keywords}\n`;
+                formattedInfo += `Type: ${auditInfo.match_type}\n`;
+                if (auditInfo.keywords) {
+                    formattedInfo += `Keywords: ${auditInfo.keywords}\n`;
+                }
+                if (auditInfo.lender_amount) {
+                    formattedInfo += `Lender Amount: ${auditInfo.lender_amount}\n`;
+                }
+                if (auditInfo.borrower_amount) {
+                    formattedInfo += `Borrower Amount: ${auditInfo.borrower_amount}\n`;
+                }
         }
         
         return formattedInfo.trim().replace(/^\n+/, '');
@@ -709,33 +856,97 @@ function formatAuditInfo(auditInfoStr) {
     }
 }
 
-function displayMatches(matches, targetDivId = 'reconciliation-result') {
+// Function to deduplicate matches and show only unique matches
+function deduplicateMatches(matches) {
+    const uniqueMatches = [];
+    const processedPairs = new Set();
+    
+    matches.forEach(match => {
+        // Create a unique key for each match pair
+        const uid1 = match.uid;
+        const uid2 = match.matched_uid;
+        const pairKey1 = `${uid1}-${uid2}`;
+        const pairKey2 = `${uid2}-${uid1}`;
+        
+        // Check if we've already processed this pair
+        if (!processedPairs.has(pairKey1) && !processedPairs.has(pairKey2)) {
+            uniqueMatches.push(match);
+            processedPairs.add(pairKey1);
+            processedPairs.add(pairKey2);
+        }
+    });
+    
+    return uniqueMatches;
+}
+
+function displayMatches(matches, targetDivId = 'reconciliation-result', filterContext = null) {
     const resultDiv = document.getElementById(targetDivId);
     
     if (!matches || matches.length === 0) {
         // Check if we're in the matched results display
         if (targetDivId === 'matched-results-display') {
             resultDiv.innerHTML = `
-                <div style="text-align: center; color: #666; padding: 20px;">
-                    No matches found for the selected company pair and period. 
+                <div class="alert alert-info text-center">
+                    <i class="bi bi-info-circle me-2"></i>No matches found for the selected company pair and period. 
                     <br>Try selecting different options or run reconciliation first.
                 </div>
             `;
         } else {
         resultDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No matches found. Run reconciliation to find matching transactions.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No matches found. Run reconciliation to find matching transactions.
             </div>
         `;
         }
         return;
     }
     
+    // Deduplicate matches to show only unique matches
+    const uniqueMatches = deduplicateMatches(matches);
+    
+    // Sort matches: AUTO-MATCH records first, then others
+    uniqueMatches.sort((a, b) => {
+        // Parse audit info to get match type
+        let matchTypeA = '';
+        let matchTypeB = '';
+        
+        try {
+            if (a.audit_info) {
+                const auditInfoA = JSON.parse(a.audit_info);
+                matchTypeA = auditInfoA.match_type || '';
+            }
+        } catch (e) {
+            console.warn('Could not parse audit_info for record A:', a.audit_info);
+        }
+        
+        try {
+            if (b.audit_info) {
+                const auditInfoB = JSON.parse(b.audit_info);
+                matchTypeB = auditInfoB.match_type || '';
+            }
+        } catch (e) {
+            console.warn('Could not parse audit_info for record B:', b.audit_info);
+        }
+        
+        // Check if records are auto-accepted (PO, LC, LOAN_ID, FINAL_SETTLEMENT, or INTERUNIT_LOAN)
+        const isAutoAcceptedA = ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchTypeA);
+        const isAutoAcceptedB = ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchTypeB);
+        
+        // Sort: AUTO-MATCH records first (-1), then others (1)
+        if (isAutoAcceptedA && !isAutoAcceptedB) {
+            return -1; // A is AUTO-MATCH, B is not
+        } else if (!isAutoAcceptedA && isAutoAcceptedB) {
+            return 1; // A is not AUTO-MATCH, B is
+        } else {
+            return 0; // Both are same type, maintain original order
+        }
+    });
+    
     // Get dynamic lender/borrower names from the first match (same logic as Excel export)
     let lender_name = 'Lender';
     let borrower_name = 'Borrower';
-    if (matches.length > 0) {
-        const first_match = matches[0];
+    if (uniqueMatches.length > 0) {
+        const first_match = uniqueMatches[0];
         // Determine which is lender (Debit side) vs borrower (Credit side)
         if (first_match.Debit && first_match.Debit > 0) {
             // Main record is lender (Debit side)
@@ -758,10 +969,31 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
         }
     }
     
+    // Build context header if filter context is provided
+    let contextHeader = '';
+    if (filterContext && (filterContext.lenderCompany || filterContext.month)) {
+        let filterInfo = [];
+        if (filterContext.lenderCompany) {
+            filterInfo.push(`<strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}`);
+        }
+        if (filterContext.month) {
+            filterInfo.push(`<strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}`);
+        }
+        
+        if (filterInfo.length > 0) {
+            contextHeader = `
+                <div class="alert alert-primary mb-3" role="alert">
+                    <i class="bi bi-funnel me-2"></i>${filterInfo.join('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')}
+                </div>
+            `;
+        }
+    }
+    
     let tableHTML = `
         <div class="matched-transactions-wrapper">
+            ${contextHeader}
             <div class="matched-header">
-                <h6><i class="bi bi-link-45deg"></i> Matched Transactions (${matches.length} pairs)</h6>
+                <h6><i class="bi bi-link-45deg"></i> Matched Transactions (${uniqueMatches.length} transactions)</h6>
             </div>
             <div class="table-responsive">
                 <table class="matched-transactions-table">
@@ -782,6 +1014,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                             <th data-column="borrower_vch_type">Borrower Vch Type</th>
                             <th data-column="borrower_role">Borrower Role</th>
                             <!-- Match Details Columns -->
+                            <th data-column="match_method">Match Method</th>
                             <th data-column="audit_info">Audit Info</th>
                             <th data-column="actions">Actions</th>
                     </tr>
@@ -789,7 +1022,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <tbody>
     `;
     
-    matches.forEach(match => {
+    uniqueMatches.forEach(match => {
         // Determine which record is lender and which is borrower based on Debit/Credit values
         let lenderRecord, borrowerRecord, lenderUid, borrowerUid, lenderRole, borrowerRole;
         
@@ -915,6 +1148,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result') {
                 <td data-column="borrower_vch_type">${borrowerRecord.Vch_Type || ''}</td>
                 <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
+                <td data-column="match_method">${formatMatchMethod(match.match_method)}</td>
                 <td data-column="audit_info">
                     <div class="audit-info-text">${(formatAuditInfo(match.audit_info) || '').replace(/\n/g, '<br>')}</div>
                 </td>
@@ -948,15 +1182,15 @@ function generateActionButtons(match) {
         console.warn('Could not parse audit_info:', match.audit_info);
     }
     
-    // Check if this match is auto-accepted (PO or LC)
-    const isAutoAccepted = ['PO', 'LC'].includes(matchType);
+    // Check if this match is auto-accepted (PO, LC, LOAN_ID, FINAL_SETTLEMENT, or INTERUNIT_LOAN)
+    const isAutoAccepted = ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN'].includes(matchType);
     
     // If auto-accepted, show a badge instead of action buttons
     if (isAutoAccepted) {
         return `
             <div class="d-flex justify-content-center align-items-center">
-                <span class="badge bg-success text-white px-3 py-2" style="font-size: 10px;">
-                    <i class="bi bi-check-circle me-1"></i>Auto-Confirmed
+                <span class="badge bg-success text-white px-2 py-2" style="font-size: 10px;">
+                    <i class="bi bi-check-circle me-1"></i>Auto-Match
                 </span>
             </div>
         `;
@@ -992,14 +1226,14 @@ async function acceptMatch(uid) {
         const result = await response.json();
         
         if (response.ok) {
-            alert('Match accepted successfully!');
+            showNotification('Match accepted successfully!', 'success');
             loadMatches(); // Refresh the matches display
         } else {
-            alert(`Failed to accept match: ${result.error}`);
+            showNotification(`Failed to accept match: ${result.error}`, 'error');
         }
         
     } catch (error) {
-        alert(`Error accepting match: ${error.message}`);
+        showNotification(`Error accepting match: ${error.message}`, 'error');
     }
 }
 
@@ -1023,14 +1257,14 @@ async function rejectMatch(uid) {
         const result = await response.json();
         
         if (response.ok) {
-            alert('Match rejected successfully!');
+            showNotification('Match rejected successfully!', 'success');
             loadMatches(); // Refresh the matches display
         } else {
-            alert(`Failed to reject match: ${result.error}`);
+            showNotification(`Failed to reject match: ${result.error}`, 'error');
         }
         
     } catch (error) {
-        alert(`Error rejecting match: ${error.message}`);
+        showNotification(`Error rejecting match: ${error.message}`, 'error');
     }
 }
 
@@ -1092,12 +1326,30 @@ async function loadRecentUploads() {
         const result = await response.json();
         const container = document.getElementById('recent-uploads-list');
         if (response.ok && result.recent_uploads && result.recent_uploads.length > 0) {
-            let html = '<div class="recent-uploads-heading">Recent uploads</div>';
-            html += '<ul class="recent-uploads-ul">';
-            result.recent_uploads.forEach(f => {
-                html += `<li class="recent-upload-item">${f}</li>`;
+            let html = '<div class="upload-history">';
+            html += '<h6 class="mb-3"><i class="bi bi-clock-history me-2"></i>File Upload History</h6>';
+            
+            // Display uploads in reverse chronological order (newest first)
+            result.recent_uploads.slice().reverse().forEach((upload, index) => {
+                html += '<div class="alert alert-success mb-2" role="alert">';
+                html += '<div class="d-flex align-items-center">';
+                html += '<i class="bi bi-file-earmark-arrow-up me-2"></i>';
+                
+                // Check if this is a file pair (contains " AND ")
+                if (upload.includes(' AND ')) {
+                    const [file1, file2] = upload.split(' AND ');
+                    const pairHtml = '<span><strong>Files:</strong></span><span>&nbsp;</span>' + file1 + ' <span class="and-button"><strong>AND</strong></span> ' + file2;
+                    html += pairHtml;
+                } else {
+                    // Handle legacy individual files
+                    html += '<strong>File: </strong>' + upload;
+                }
+                
+                html += '</div>';
+                html += '</div>';
             });
-            html += '</ul>';
+            
+            html += '</div>';
             container.innerHTML = html;
         } else {
             container.innerHTML = '';
@@ -1105,7 +1357,7 @@ async function loadRecentUploads() {
     } catch (error) {
         document.getElementById('recent-uploads-list').innerHTML = '';
     }
-} 
+}
 
 // Add Clear File List button handler
 async function clearRecentUploads() {
@@ -1117,7 +1369,25 @@ async function clearRecentUploads() {
     } catch (error) {
         // Ignore
     }
-} 
+}
+
+// Function to remove a specific upload from history
+async function removeUploadFromHistory(index) {
+    try {
+        const response = await fetch('/api/remove-upload-from-history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ index: index })
+        });
+        if (response.ok) {
+            loadRecentUploads();
+        }
+    } catch (error) {
+        // Ignore
+    }
+}
 
 // Load detected company pairs
 async function loadDetectedPairs() {
@@ -1155,8 +1425,8 @@ function displayDetectedPairs(pairs, type) {
     
     if (!pairs || pairs.length === 0) {
         displayDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No ${type.toLowerCase()} pairs found.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No ${type.toLowerCase()} pairs found.
             </div>
         `;
         return;
@@ -1242,8 +1512,8 @@ function displayPairs(pairs) {
     
     if (!pairs || pairs.length === 0) {
         resultDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No upload pairs found. Upload some files to get started.
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No upload pairs found. Upload some files to get started.
             </div>
         `;
         return;
@@ -1254,25 +1524,42 @@ function displayPairs(pairs) {
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th class="text-center">Pair ID</th>
-                        <th class="text-center">Upload Date</th>
-                        <th class="text-center">Records</th>
-                        <th class="text-center">Actions</th>
+                        <th data-column="pair_id" class="uid-cell text-center">Pair ID</th>
+                        <th data-column="upload_date" class="date-cell text-center">Upload Date</th>
+                        <th data-column="record_count" class="amount-cell text-center">Records</th>
+                        <th data-column="actions" class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
     
     pairs.forEach(pair => {
-        const uploadDate = new Date(pair.upload_date).toLocaleString();
+        // Handle date formatting with error checking
+        let uploadDate = 'Invalid Date';
+        try {
+            if (pair.upload_date) {
+                const date = new Date(pair.upload_date);
+                if (!isNaN(date.getTime())) {
+                    uploadDate = date.toLocaleString();
+                }
+            }
+        } catch (e) {
+            console.warn('Error formatting date:', e);
+        }
+        
+        // Handle record count with fallback
+        const recordCount = pair.record_count || 0;
+        
+        // Handle pair_id with fallback
+        const pairId = pair.pair_id || 'Unknown';
         
         tableHTML += `
             <tr>
-                <td class="text-center"><code>${pair.pair_id}</code></td>
-                <td class="text-center">${uploadDate}</td>
-                <td class="text-center"><span class="badge bg-info">${pair.record_count}</span></td>
-                <td class="text-center">
-                    <a href="#" onclick="viewPairData('${pair.pair_id}')" class="text-primary text-decoration-none">
+                <td data-column="pair_id" class="uid-cell"><code>${pairId}</code></td>
+                <td data-column="upload_date" class="date-cell">${uploadDate}</td>
+                <td data-column="record_count" class="amount-cell"><span class="badge bg-info">${recordCount}</span></td>
+                <td data-column="actions">
+                    <a href="#" onclick="viewPairData('${pairId}')" class="text-primary text-decoration-none">
                         <i class="bi bi-eye"></i> View
                     </a>
                 </td>
@@ -1308,10 +1595,10 @@ async function viewPairData(pairId) {
                 ${resultDiv.innerHTML}
             `;
         } else {
-            alert(`Failed to load pair data: ${result.error}`);
+            showNotification(`Failed to load pair data: ${result.error}`, 'error');
         }
     } catch (error) {
-        alert(`Error loading pair data: ${error.message}`);
+        showNotification(`Error loading pair data: ${error.message}`, 'error');
     }
 }
 
@@ -1320,7 +1607,7 @@ async function viewPairData(pairId) {
 // Load unmatched results
 async function loadUnmatchedResults() {
     const resultDiv = document.getElementById('unmatched-results-display');
-    resultDiv.innerHTML = '<div style="color: blue;">Loading unmatched results...</div>';
+    resultDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Loading unmatched results...</div>';
     
     // Get selected company pair and period
     const companySelect = document.getElementById('unmatched-company-pair-select');
@@ -1365,12 +1652,19 @@ async function loadUnmatchedResults() {
         const result = await response.json();
         
         if (response.ok) {
-            displayUnmatchedResults(result.unmatched);
+            // Pass filter context to displayUnmatchedResults for context header
+            const filterContext = {
+                lenderCompany: lenderCompany,
+                borrowerCompany: borrowerCompany,
+                month: month,
+                year: year
+            };
+            displayUnmatchedResults(result.unmatched, filterContext);
         } else {
-            resultDiv.innerHTML = `<div style="color: red;">Failed to load unmatched results: ${result.error}</div>`;
+            resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${result.error}</div>`;
         }
     } catch (error) {
-        resultDiv.innerHTML = `<div style="color: red;">Failed to load unmatched results: ${error.message}</div>`;
+        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to load unmatched results: ${error.message}</div>`;
     }
 }
 
@@ -1422,21 +1716,42 @@ async function downloadUnmatchedResults() {
 }
 
 // Display unmatched results
-function displayUnmatchedResults(unmatched) {
+function displayUnmatchedResults(unmatched, filterContext = null) {
     const displayDiv = document.getElementById('unmatched-results-display');
     
     if (!unmatched || unmatched.length === 0) {
         displayDiv.innerHTML = `
-            <div style="text-align: center; color: #666; padding: 20px;">
-                No unmatched transactions found for the selected company pair and period. 
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle me-2"></i>No unmatched transactions found for the selected company pair and period. 
                 <br>Try selecting different options or check if data exists for this combination.
             </div>
         `;
         return;
     }
     
+    // Build context header if filter context is provided
+    let contextHeader = '';
+    if (filterContext && (filterContext.lenderCompany || filterContext.month)) {
+        let filterInfo = [];
+        if (filterContext.lenderCompany) {
+            filterInfo.push(`<strong>Company Pair:</strong> ${filterContext.lenderCompany} ↔ ${filterContext.borrowerCompany}`);
+        }
+        if (filterContext.month) {
+            filterInfo.push(`<strong>Statement Period:</strong> ${filterContext.month} ${filterContext.year}`);
+        }
+        
+        if (filterInfo.length > 0) {
+            contextHeader = `
+                <div class="alert alert-primary mb-3" role="alert">
+                    <i class="bi bi-funnel me-2"></i>${filterInfo.join('&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')}
+                </div>
+            `;
+        }
+    }
+    
     let tableHTML = `
         <div class="unmatched-transactions-wrapper">
+            ${contextHeader}
             <div class="unmatched-header">
                 <h6><i class="bi bi-link-45deg"></i> Unmatched Transactions (${unmatched.length} records)</h6>
             </div>
@@ -1606,7 +1921,7 @@ function clearUnmatchedCompanySelection() {
 // Load company pairs for matched filter
 async function loadMatchedCompanyPairs() {
     try {
-        const response = await fetch('/api/unreconciled-pairs');
+        const response = await fetch('/api/matched-pairs');
         const result = await response.json();
         
         if (response.ok && result.pairs) {
@@ -1952,7 +2267,7 @@ function displayReconciliationHistory() {
         historyHTML += '</div>';
         historyHTML += '</div>';
         historyHTML += '<div class="ms-3">';
-        historyHTML += '<button type="button" class="btn btn-sm btn-outline-success me-2" onclick="showTab(\'matched-results\')">View Results</button>';
+        historyHTML += '<button type="button" class="btn btn-sm btn-outline-success me-2" onclick="viewReconciliationResults(\'' + result.companyPair + '\', \'' + result.statementPeriod + '\')">View Results</button>';
         historyHTML += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeReconciliationFromHistory(' + (reconciliationHistory.length - 1 - index) + ')">Remove</button>';
         historyHTML += '</div>';
         historyHTML += '</div>';
@@ -1983,7 +2298,189 @@ function clearAllReconciliationHistory() {
     displayReconciliationHistory();
 }
 
+// Function to view reconciliation results with automatic company pair and period selection
+function viewReconciliationResults(companyPair, statementPeriod) {
+    // Navigate to matched results page
+    showTab('matched-results');
+    
+    // Wait for the page to load and company pairs to be loaded
+    setTimeout(() => {
+        const companySelect = document.getElementById('matched-company-pair-select');
+        const periodSelect = document.getElementById('matched-period-select');
+        
+        if (companySelect && companyPair && companyPair !== 'All Companies') {
+            // Find and select the company pair
+            for (let i = 0; i < companySelect.options.length; i++) {
+                if (companySelect.options[i].text === companyPair) {
+                    companySelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // Trigger the change event to load periods for this company pair
+            if (companySelect) {
+                companySelect.dispatchEvent(new Event('change'));
+                
+                // Wait for periods to be loaded, then select the period
+                setTimeout(() => {
+                    if (periodSelect && statementPeriod && statementPeriod !== 'All Periods') {
+                        // Find and select the statement period
+                        for (let i = 0; i < periodSelect.options.length; i++) {
+                            if (periodSelect.options[i].text === statementPeriod) {
+                                periodSelect.selectedIndex = i;
+                                periodSelect.dispatchEvent(new Event('change'));
+                                break;
+                            }
+                        }
+                        
+                        // Load the matched results automatically
+                        loadMatchesInViewer();
+                    }
+                }, 200); // Wait for periods to load
+            }
+        }
+    }, 100);
+}
+
 // Function to clear the reconciliation notification (legacy function for backward compatibility)
 function clearReconciliationNotification() {
     clearAllReconciliationHistory();
+}
+
+// Function to truncate the database table
+async function truncateTable() {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL data in the table!\n\nThis action cannot be undone. Are you sure you want to continue?')) {
+        return;
+    }
+    
+    const resultDiv = document.getElementById('truncate-result');
+    resultDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Truncating table...</div>';
+    
+    try {
+        const response = await fetch('/api/truncate-table', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            resultDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${result.message}</div>`;
+            
+            // Refresh data displays
+            setTimeout(() => {
+                loadData();
+                loadUnreconciledPairs();
+                showNotification('Table truncated successfully. All data has been cleared.', 'success');
+            }, 1000);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to truncate table: ${result.error || 'Unknown error'}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message}</div>`;
+    }
+}
+
+// Function to reset all matches
+async function resetAllMatches() {
+    if (!confirm('⚠️ WARNING: This will reset all match status columns!\n\nThis will make all transactions available for matching again. Are you sure you want to continue?')) {
+        return;
+    }
+    
+    const resultDiv = document.getElementById('reset-matches-result');
+    resultDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Resetting all matches...</div>';
+    
+    try {
+        const response = await fetch('/api/reset-all-matches', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            resultDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>${result.message}</div>`;
+            
+            // Refresh data displays
+            setTimeout(() => {
+                loadData();
+                loadUnreconciledPairs();
+                showNotification('All matches reset successfully. Transactions are now available for matching again.', 'success');
+            }, 1000);
+        } else {
+            resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Failed to reset matches: ${result.error || 'Unknown error'}</div>`;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>Error: ${error.message}</div>`;
+    }
+}
+
+async function downloadAutoMatches() {
+    try {
+        // Get selected company pair and period
+        const companySelect = document.getElementById('matched-company-pair-select');
+        const periodSelect = document.getElementById('matched-period-select');
+        const companyPair = companySelect ? companySelect.value : '';
+        const period = periodSelect ? periodSelect.value : '';
+        
+        let lenderCompany = '';
+        let borrowerCompany = '';
+        let month = '';
+        let year = '';
+        
+        if (companyPair && companyPair.includes('↔')) {
+            const parts = companyPair.split('↔').map(s => s.trim());
+            lenderCompany = parts[0];
+            borrowerCompany = parts[1];
+        }
+        
+        if (period && period !== '-- All Periods --') {
+            const periodParts = period.split(' ');
+            if (periodParts.length === 2) {
+                month = periodParts[0];
+                year = periodParts[1];
+            }
+        }
+        
+        // Build query string
+        let url = '/api/download-matches';
+        const params = [];
+        if (lenderCompany && borrowerCompany) {
+            params.push(`lender_company=${encodeURIComponent(lenderCompany)}`);
+            params.push(`borrower_company=${encodeURIComponent(borrowerCompany)}`);
+        }
+        if (month) params.push(`month=${encodeURIComponent(month)}`);
+        if (year) params.push(`year=${encodeURIComponent(year)}`);
+        if (params.length > 0) {
+            url += '?' + params.join('&');
+        }
+        
+        // Show loading state
+        const downloadBtn = document.getElementById('download-matched-btn');
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Downloading...';
+        downloadBtn.disabled = true;
+        
+        // Trigger download
+        window.location.href = url;
+        
+        // Reset button after a delay
+        setTimeout(() => {
+            downloadBtn.innerHTML = originalText;
+            downloadBtn.disabled = false;
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error downloading auto-matched results:', error);
+        showNotification('Failed to download auto-matched results', 'error');
+        
+        // Reset button
+        const downloadBtn = document.getElementById('download-matched-btn');
+        downloadBtn.innerHTML = '<i class="bi bi-download me-2"></i>Download Auto-Matched Results';
+        downloadBtn.disabled = false;
+    }
 }

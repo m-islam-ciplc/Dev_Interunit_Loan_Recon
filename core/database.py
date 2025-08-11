@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from core.config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DB
 import re
+from core import matching
 
 engine = create_engine(
     f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
@@ -22,7 +23,13 @@ def save_data(df):
         # Replace NaN values with None before saving
         df = df.replace({pd.NA: None, pd.NaT: None})
         df = df.where(pd.notnull(df), None)
-        df.to_sql('tally_data', engine, if_exists='append', index=False)
+        
+        # Use chunked insertion for better performance
+        chunk_size = 1000
+        for i in range(0, len(df), chunk_size):
+            chunk = df.iloc[i:i + chunk_size]
+            chunk.to_sql('tally_data', engine, if_exists='append', index=False, method='multi')
+        
         return True, None
     except Exception as e:
         if 'Duplicate entry' in str(e) and 'uid' in str(e):
@@ -131,284 +138,14 @@ def get_unmatched_data():
         print(f"Error getting unmatched data: {e}")
         return []
 
-def extract_po(particulars):
-    po_pattern = r'[A-Z]+/PO/\d+/\d+/\d+'
-    match = re.search(po_pattern, str(particulars))
-    return match.group(0) if match else None
-
-def extract_lc(particulars):
-    lc_pattern = r'L/C-\d+(?:/\d+)+'
-    match = re.search(lc_pattern, str(particulars))
-    return match.group(0) if match else None
-
-def extract_loan_id(particulars):
-    """Extract loan IDs from particulars text"""
-    # Pattern for various loan ID formats
-    patterns = [
-        r'LD\d+',  # Format: LD followed by numbers
-        r'ID-\d+', # Format: ID- followed by numbers
-        r'GEO Unit-ID-\d+'  # Format: GEO Unit-ID- followed by numbers
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, str(particulars))
-        if match:
-            # Extract just the numeric part for comparison
-            return re.search(r'\d+', match.group(0)).group(0)
-    return None
-
-def calculate_jaccard_similarity(text1, text2):
-    """Calculate Jaccard similarity between two texts.
-    
-    Used in the hybrid matching system for:
-    1. Salary description comparison (threshold: 0.3)
-    2. General text similarity when no exact matches found
-    
-    Process:
-    1. Preprocesses texts: lowercase, remove stopwords, remove short words
-    2. Creates word sets from processed texts
-    3. Calculates similarity: intersection/union of word sets
-    
-    Returns:
-    float: 0.0 to 1.0, where 1.0 means identical text content"""
-    # Preprocess texts
-    def preprocess(text):
-        # Convert to lowercase and split into words
-        words = str(text).lower().split()
-        # Remove common stopwords and short words
-        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
-        words = [w for w in words if w not in stopwords and len(w) > 2]
-        return set(words)
-    
-    # Get word sets
-    set1 = preprocess(text1)
-    set2 = preprocess(text2)
-    
-    # Calculate Jaccard similarity
-    intersection = len(set1.intersection(set2))
-    union = len(set1.union(set2))
-    
-    return intersection / union if union > 0 else 0.0
-
-def extract_salary_details(particulars):
-    """Extract salary payment details from particulars text.
-    Uses explicit keywords and patterns for auditability."""
-    particulars = str(particulars).lower()
-    details = {}
-    
-    # Explicit salary-related keywords for auditing
-    salary_keywords = {
-        'salary payment': ['salary payment', 'payment of salary'],
-        'monthly salary': ['monthly salary', 'salary for the month'],
-        'salary allowance': ['salary & allowance', 'salary and allowance'],
-        'head of': ['head of plant', 'head of department', 'head of division']
-    }
-    
-    # For Jaccard similarity comparison
-    salary_context_words = {
-        'salary', 'payment', 'allowance', 'monthly', 'pay', 'compensation', 
-        'remuneration', 'payroll', 'wages', 'earnings'
-    }
-    
-    # Check for explicit salary transaction indicators
-    is_salary = False
-    matched_keywords = []
-    for category, keywords in salary_keywords.items():
-        for keyword in keywords:
-            if keyword in particulars:
-                is_salary = True
-                matched_keywords.append(keyword)
-    
-    if not is_salary:
-        return None
-    
-    # Extract person name with more context
-    name_patterns = [
-        r'mr\.\s*([\w\s]+?)(?=\s*-|\s+(?:salary|head|payment))',  # Name followed by salary context
-        r'(?:paid to|payment to)\s*([\w\s]+?)(?=\'s\s*salary|\s+salary|\s+head)'  # Name with salary/head context
-    ]
-    
-    for pattern in name_patterns:
-        match = re.search(pattern, particulars)
-        if match:
-            details['person_name'] = match.group(1).strip()
-            break
-    
-    # Extract month and year with explicit format
-    month_year_pattern = r'(?:salary for|month of|for the month)\s+(?:of\s+)?((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[-\s]*(?:20)?\d{2})'
-    match = re.search(month_year_pattern, particulars)
-    if match:
-        details['period'] = match.group(1).strip()
-    
-    # Only return if we have all required details and explicit salary indicators
-    if details.get('person_name') and details.get('period'):
-        details['is_salary'] = True
-        details['matched_keywords'] = matched_keywords  # Store matched keywords for audit trail
-        return details
-    
-    return None
-    
-    return details if details.get('person_name') and details.get('period') else None
-
-def extract_common_text(text1, text2):
-    """Find the longest common substring between two texts"""
-    text1 = str(text1).lower()
-    text2 = str(text2).lower()
-    
-    # Split into words and find common phrases
-    words1 = text1.split()
-    words2 = text2.split()
-    
-    # Look for common phrases (3 or more words)
-    common_phrases = []
-    for i in range(len(words1)-2):
-        for j in range(len(words2)-2):
-            phrase1 = ' '.join(words1[i:i+3])
-            phrase2 = ' '.join(words2[j:j+3])
-            if phrase1 == phrase2 and len(phrase1.split()) >= 3:
-                common_phrases.append(phrase1)
-    
-    return common_phrases[0] if common_phrases else None
-
-def find_matches(data):
-    """Match transactions using a hybrid approach combining exact and Jaccard similarity matching.
-    
-    Matching Strategy:
-    1. Amount match (Debit == Credit) as base requirement
-    2. Document reference matches (exact matching):
-       - PO numbers (e.g., ABC/PO/123/456)
-       - LC numbers (e.g., L/C-123/456)
-       - Loan IDs (e.g., LD123, ID-456)
-    3. Salary payment matches (hybrid):
-       - Exact match: person name and period
-       - Jaccard similarity: description comparison (threshold: 0.3)
-    4. Common text pattern match (fallback)
-       - Uses Jaccard similarity for general descriptions
-    
-    The hybrid approach ensures:
-    - High accuracy for structured identifiers (PO, LC, Loan ID)
-    - Flexibility for variations in descriptions (Salary, General text)
-    - Complete audit trail in audit_info JSON
-    """
-    if not data:
-        print("No data to match")
-        return []
-    
-    lenders = [r for r in data if r.get('Debit') and r['Debit'] > 0]
-    borrowers = [r for r in data if r.get('Credit') and r['Credit'] > 0]
-    
-    matches = []
-    for lender in lenders:
-        lender_po = extract_po(lender.get('Particulars', ''))
-        lender_lc = extract_lc(lender.get('Particulars', ''))
-        lender_loan_id = extract_loan_id(lender.get('Particulars', ''))
-        lender_salary = extract_salary_details(lender.get('Particulars', ''))
-        
-        for borrower in borrowers:
-            if float(lender['Debit']) == float(borrower['Credit']):
-                borrower_po = extract_po(borrower.get('Particulars', ''))
-                borrower_lc = extract_lc(borrower.get('Particulars', ''))
-                borrower_loan_id = extract_loan_id(borrower.get('Particulars', ''))
-                borrower_salary = extract_salary_details(borrower.get('Particulars', ''))
-                
-                # PO match
-                if lender_po and borrower_po and lender_po == borrower_po:
-                    matches.append({
-                        'lender_uid': lender['uid'],
-                        'borrower_uid': borrower['uid'],
-                        'amount': lender['Debit'],
-                        'match_type': 'PO',
-                        'po': lender_po
-                    })
-                    continue
-                    
-                # Salary payment match with both exact and Jaccard matching
-                lender_text = lender.get('Particulars', '')
-                borrower_text = borrower.get('Particulars', '')
-                jaccard_score = calculate_jaccard_similarity(lender_text, borrower_text)
-                
-                if lender_salary and borrower_salary:
-                    # Exact keyword matching
-                    exact_match = (lender_salary['person_name'] == borrower_salary['person_name'] and 
-                                 lender_salary['period'] == borrower_salary['period'] and
-                                 lender_salary['is_salary'] and borrower_salary['is_salary'])
-                    
-                    # Jaccard similarity threshold for salary descriptions
-                    jaccard_threshold = 0.3  # Can be adjusted based on requirements
-                    
-                    if exact_match or jaccard_score >= jaccard_threshold:
-                        # Combine matched keywords and similarity score for audit trail
-                        audit_keywords = {
-                            'lender_keywords': lender_salary['matched_keywords'] if lender_salary else [],
-                            'borrower_keywords': borrower_salary['matched_keywords'] if borrower_salary else [],
-                            'jaccard_score': round(jaccard_score, 3),
-                            'match_method': 'exact' if exact_match else 'jaccard'
-                        }
-                        
-                        matches.append({
-                            'lender_uid': lender['uid'],
-                            'borrower_uid': borrower['uid'],
-                            'amount': lender['Debit'],
-                            'match_type': 'SALARY',
-                            'person': lender_salary['person_name'] if lender_salary else None,
-                            'period': lender_salary['period'] if lender_salary else None,
-                            'audit_trail': audit_keywords
-                        })
-                        continue
-                
-                # LC match
-                if lender_lc and borrower_lc and lender_lc == borrower_lc:
-                    matches.append({
-                        'lender_uid': lender['uid'],
-                        'borrower_uid': borrower['uid'],
-                        'amount': lender['Debit'],
-                        'match_type': 'LC',
-                        'lc': lender_lc
-                    })
-                    continue
-                
-                # Loan ID match
-                if lender_loan_id and borrower_loan_id and lender_loan_id == borrower_loan_id:
-                    matches.append({
-                        'lender_uid': lender['uid'],
-                        'borrower_uid': borrower['uid'],
-                        'amount': lender['Debit'],
-                        'match_type': 'LOAN_ID',
-                        'loan_id': lender_loan_id
-                    })
-                    continue
-                
-                # Common text pattern match
-                common_text = extract_common_text(
-                    lender.get('Particulars', ''),
-                    borrower.get('Particulars', '')
-                )
-                if common_text and isinstance(common_text, str) and common_text.strip():
-                    # Calculate Jaccard score for the overall texts
-                    text_similarity = calculate_jaccard_similarity(
-                        lender.get('Particulars', ''),
-                        borrower.get('Particulars', '')
-                    )
-                    matches.append({
-                        'lender_uid': lender['uid'],
-                        'borrower_uid': borrower['uid'],
-                        'amount': lender['Debit'],
-                        'match_type': 'COMMON_TEXT',
-                        'common_text': common_text.strip(),
-                        'audit_trail': {
-                            'jaccard_score': round(text_similarity, 3),
-                            'matched_phrase': common_text.strip()  # Store the actual matching phrase
-                        }
-                    })
-    print(f"Found {len(matches)} matches (Debit==Credit and PO/LC match)")
-    return matches
+# Matching functions moved to core/matching.py
 
 def update_matches(matches):
     """Update database with matched records using the hybrid matching system.
     
     Auto-acceptance logic:
-    - PO and LC matches are automatically confirmed (high confidence)
-    - LOAN_ID, SALARY, and COMMON_TEXT matches require manual review
+    - PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches are automatically confirmed (high confidence)
+    - SALARY and COMMON_TEXT matches require manual review
     
     Stores match information in three columns:
     1. match_method: 'exact' or 'jaccard'
@@ -426,67 +163,139 @@ def update_matches(matches):
     )
     
     with engine.connect() as conn:
-        for match in matches:
+        for i, match in enumerate(matches):
             # Prepare match information and determine auto-acceptance
-            # PO and LC matches are auto-accepted due to high confidence
-            auto_accept = match['match_type'] in ['PO', 'LC']
+            # PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches are auto-accepted due to high confidence
+            auto_accept = match['match_type'] in ['PO', 'LC', 'LOAN_ID', 'FINAL_SETTLEMENT', 'INTERUNIT_LOAN']
             
             if match['match_type'] == 'PO':
-                keywords = match['po']
-                match_method = 'exact'
+                match_method = 'reference_match'
             elif match['match_type'] == 'LC':
-                keywords = match['lc']
-                match_method = 'exact'
+                match_method = 'reference_match'
             elif match['match_type'] == 'LOAN_ID':
-                keywords = match['loan_id']
-                match_method = 'exact'
+                match_method = 'reference_match'
             elif match['match_type'] == 'SALARY':
                 # For salary matches, use the audit trail
-                keywords = f"person:{match['person']},period:{match['period']}"
-                match_method = match['audit_trail']['match_method']
+                match_method = 'similarity_match'
                 jaccard_score = match['audit_trail'].get('jaccard_score', 0)
+            elif match['match_type'] == 'FINAL_SETTLEMENT':
+                # For final settlement matches, use the audit trail
+                match_method = 'reference_match'
             elif match['match_type'] == 'COMMON_TEXT':
                 # For COMMON_TEXT matches, use the actual matching text and store in all relevant fields
                 common_text = match.get('common_text', '')
-                keywords = common_text
-                match_method = 'jaccard'
+                match_method = 'similarity_match'
+            elif match['match_type'] == 'INTERUNIT_LOAN':
+                # For INTERUNIT_LOAN matches, extract keywords from audit trail
+                match_method = 'cross_reference'
             else:
-                keywords = ''
-                match_method = ''
+                match_method = 'fallback_match'
 
             # Store audit information as JSON
             audit_info = {
                 'match_type': match['match_type'],
-                'match_method': match_method,
-                'keywords': keywords,
-                'matched_text': None
+                'match_method': match_method
             }
+            
+            # Prepare keywords for database storage
+            keywords = ''
+            if match['match_type'] == 'PO':
+                keywords = match.get('po', '')
+            elif match['match_type'] == 'LC':
+                keywords = match.get('lc', '')
+            elif match['match_type'] == 'LOAN_ID':
+                keywords = match.get('loan_id', '')
+            elif match['match_type'] == 'SALARY':
+                keywords = f"person:{match.get('person', '')},period:{match.get('period', '')}"
+            elif match['match_type'] == 'FINAL_SETTLEMENT':
+                keywords = f"person:{match.get('person', '')}"
+            elif match['match_type'] == 'COMMON_TEXT':
+                keywords = match.get('common_text', '')
+            elif match['match_type'] == 'INTERUNIT_LOAN':
+                if 'audit_trail' in match and 'keywords' in match['audit_trail']:
+                    keywords_dict = match['audit_trail']['keywords']
+                    keywords = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
+                else:
+                    keywords = 'Interunit loan keywords'
 
             # Add match-specific details to audit trail
-            if match['match_type'] == 'COMMON_TEXT':
-                # Always store the actual common text in all relevant fields for audit
+            if match['match_type'] == 'PO':
+                # Store PO specific audit information
+                audit_info['po_number'] = match.get('po', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+            elif match['match_type'] == 'LC':
+                # Store LC specific audit information
+                audit_info['lc_number'] = match.get('lc', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+            elif match['match_type'] == 'LOAN_ID':
+                # Store LOAN_ID specific audit information
+                audit_info['loan_id'] = match.get('loan_id', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+            elif match['match_type'] == 'SALARY':
+                # Store SALARY specific audit information
+                audit_info['person'] = match.get('person', '')
+                audit_info['period'] = match.get('period', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+                if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
+                    audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
+            elif match['match_type'] == 'FINAL_SETTLEMENT':
+                # Store FINAL_SETTLEMENT specific audit information
+                audit_info['person'] = match.get('person', '')
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
+                if 'audit_trail' in match:
+                    audit_info.update(match['audit_trail'])
+            elif match['match_type'] == 'COMMON_TEXT':
+                # Store COMMON_TEXT specific audit information
                 audit_info['common_text'] = common_text
                 audit_info['matched_text'] = common_text
                 audit_info['matched_phrase'] = common_text
-                audit_info['keywords'] = common_text
+                audit_info['lender_amount'] = match.get('amount', '')
+                audit_info['borrower_amount'] = match.get('amount', '')
                 if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                     audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
-                print(f"DEBUG: Writing COMMON_TEXT audit_info for {match.get('lender_uid')} and {match.get('borrower_uid')}: {audit_info}")
+            elif match['match_type'] == 'INTERUNIT_LOAN':
+                # Store INTERUNIT_LOAN specific audit information
+                if 'audit_trail' in match:
+                    audit_info.update(match['audit_trail'])
+                    # Store amount information
+                    audit_info['lender_amount'] = match.get('amount', '')
+                    audit_info['borrower_amount'] = match.get('amount', '')
+                    # Store keywords as string, not object
+                    if 'keywords' in match['audit_trail']:
+                        keywords_dict = match['audit_trail']['keywords']
+                        audit_info['keywords'] = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
             elif 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                 audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
 
-            # Convert to JSON string
-            audit_json = json.dumps(audit_info)
+            # Convert to JSON string (handle Decimal objects)
+            def convert_decimal(obj):
+                if hasattr(obj, '__str__'):
+                    return str(obj)
+                return obj
             
-            # Determine match status: auto-accept PO and LC matches
-            match_status = 'confirmed' if auto_accept else 'matched'
+            # Convert any Decimal objects to strings
+            audit_info_serializable = {}
+            for key, value in audit_info.items():
+                audit_info_serializable[key] = convert_decimal(value)
+            
+            audit_json = json.dumps(audit_info_serializable)
+            
+            # Determine match status: auto-accept PO and LC matches, manual verification for MANUAL_VERIFICATION
+            if match['match_type'] == 'MANUAL_VERIFICATION':
+                match_status = 'pending_verification'
+            else:
+                match_status = 'confirmed' if auto_accept else 'matched'
             
             # Update the borrower (Credit) record - point to lender
-            conn.execute(text("""
+            result1 = conn.execute(text("""
                 UPDATE tally_data 
                 SET matched_with = :matched_with, 
                     match_status = :match_status, 
-                    keywords = :keywords,
                     match_method = :match_method,
                     audit_info = :audit_info,
                     date_matched = NOW()
@@ -494,18 +303,16 @@ def update_matches(matches):
             """), {
                 'matched_with': match['lender_uid'],
                 'match_status': match_status,
-                'keywords': keywords,
                 'match_method': match_method,
                 'audit_info': audit_json,
                 'borrower_uid': match['borrower_uid']
             })
             
             # Update the lender (Debit) record - point to borrower
-            conn.execute(text("""
+            result2 = conn.execute(text("""
                 UPDATE tally_data 
                 SET matched_with = :matched_with, 
                     match_status = :match_status, 
-                    keywords = :keywords,
                     match_method = :match_method,
                     audit_info = :audit_info,
                     date_matched = NOW()
@@ -513,7 +320,6 @@ def update_matches(matches):
             """), {
                 'matched_with': match['borrower_uid'],
                 'match_status': match_status,
-                'keywords': keywords,
                 'match_method': match_method,
                 'audit_info': audit_json,
                 'lender_uid': match['lender_uid']
@@ -547,7 +353,6 @@ def get_matched_data():
                 t2.Date as matched_date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords,
                 t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type,
                 t2.role as matched_role,
@@ -555,10 +360,113 @@ def get_matched_data():
                 t1.audit_info as match_audit_info
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'matched'
+            WHERE t1.match_status = 'matched' OR t1.match_status = 'pending_verification'
             ORDER BY t1.date_matched DESC
         """))
         
+        records = []
+        for row in result:
+            record = dict(row._mapping)
+            records.append(record)
+        
+        return records
+
+def get_auto_matched_data():
+    """Get only auto-matched transactions (high confidence matches that are automatically accepted).
+    
+    Returns records with auto-accepted matching information:
+    - PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches
+    - These are automatically confirmed due to high confidence
+    
+    Auto-matches are identified by:
+    - match_status = 'confirmed' (automatically accepted)
+    - match_method IN ('reference_match', 'cross_reference')
+      * reference_match: PO, LC, LOAN_ID, FINAL_SETTLEMENT matches
+      * cross_reference: INTERUNIT_LOAN matches
+    
+    Results are ordered by match date descending."""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT 
+                t1.*,
+                t2.lender as matched_lender, 
+                t2.borrower as matched_borrower,
+                t2.Particulars as matched_particulars, 
+                t2.Date as matched_date,
+                t2.Debit as matched_Debit, 
+                t2.Credit as matched_Credit,
+                t2.uid as matched_uid,
+                t2.Vch_Type as matched_Vch_Type,
+                t2.role as matched_role,
+                t1.match_method,
+                t1.audit_info as match_audit_info
+            FROM tally_data t1
+            LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
+            WHERE t1.match_status = 'confirmed' 
+                AND t1.match_method IN ('reference_match', 'cross_reference')
+            ORDER BY t1.date_matched DESC
+        """))
+        
+        records = []
+        for row in result:
+            record = dict(row._mapping)
+            records.append(record)
+        
+        return records
+
+def get_auto_matched_data_by_companies(lender_company, borrower_company, month=None, year=None):
+    """Get auto-matched transactions filtered by company names and optionally by statement period.
+    
+    Only returns high-confidence auto-matches:
+    - match_status = 'confirmed' (automatically accepted)
+    - match_method IN ('reference_match', 'cross_reference')
+      * reference_match: PO, LC, LOAN_ID, FINAL_SETTLEMENT matches
+      * cross_reference: INTERUNIT_LOAN matches
+    
+    Excludes manual matches that require verification (SALARY, COMMON_TEXT)."""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    with engine.connect() as conn:
+        # Main query for auto-matched data only
+        query = '''
+            SELECT 
+                t1.*,
+                t2.lender as matched_lender, 
+                t2.borrower as matched_borrower,
+                t2.Particulars as matched_particulars, 
+                t2.Date as matched_date,
+                t2.Debit as matched_Debit, 
+                t2.Credit as matched_Credit,
+                t2.uid as matched_uid,
+                t2.Vch_Type as matched_Vch_Type,
+                t2.role as matched_role
+            FROM tally_data t1
+            LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
+            WHERE t1.match_status = 'confirmed' 
+                AND t1.match_method IN ('reference_match', 'cross_reference')
+                AND (
+                    (t1.lender = :lender_company AND t1.borrower = :borrower_company)
+                    OR (t1.lender = :borrower_company AND t1.borrower = :lender_company)
+                )
+        '''
+        params = {
+            'lender_company': lender_company,
+            'borrower_company': borrower_company
+        }
+        if month:
+            query += ' AND t1.statement_month = :month'
+            params['month'] = month
+        if year:
+            query += ' AND t1.statement_year = :year'
+            params['year'] = year
+        query += ' ORDER BY t1.date_matched DESC'
+        
+        result = conn.execute(text(query), params)
         records = []
         for row in result:
             record = dict(row._mapping)
@@ -585,8 +493,7 @@ def update_match_status(uid, status, confirmed_by=None):
                     sql_reset_main = """
                     UPDATE tally_data 
                     SET match_status = 'unmatched', 
-                        matched_with = NULL,
-                        keywords = NULL
+                        matched_with = NULL
                     WHERE uid = :uid
                     """
                     conn.execute(text(sql_reset_main), {'uid': uid})
@@ -595,8 +502,7 @@ def update_match_status(uid, status, confirmed_by=None):
                     sql_reset_matched = """
                     UPDATE tally_data 
                     SET match_status = 'unmatched', 
-                        matched_with = NULL,
-                        keywords = NULL
+                        matched_with = NULL
                     WHERE uid = :matched_with_uid
                     """
                     conn.execute(text(sql_reset_matched), {'matched_with_uid': matched_with_uid})
@@ -606,8 +512,7 @@ def update_match_status(uid, status, confirmed_by=None):
                     sql_reset_main = """
                     UPDATE tally_data 
                     SET match_status = 'unmatched', 
-                        matched_with = NULL,
-                        keywords = NULL
+                        matched_with = NULL
                     WHERE uid = :uid
                     """
                     conn.execute(text(sql_reset_main), {'uid': uid})
@@ -678,7 +583,7 @@ def get_pending_matches():
                 t1.*, t2.lender as matched_lender, t2.borrower as matched_borrower,
                t2.Particulars as matched_particulars, t2.Date as matched_date,
                 t2.Debit as matched_Debit, t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords, t2.uid as matched_uid,
+                t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
         FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
@@ -705,7 +610,7 @@ def get_confirmed_matches():
                 t1.*, t2.lender as matched_lender, t2.borrower as matched_borrower,
                t2.Particulars as matched_particulars, t2.Date as matched_date,
                 t2.Debit as matched_Debit, t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords, t2.uid as matched_uid,
+                t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
         FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
@@ -728,14 +633,47 @@ def reset_match_status():
             reset_query = text("""
                 UPDATE tally_data 
                 SET match_status = NULL, 
-                    matched_with = NULL, 
-                    keywords = NULL
+                    matched_with = NULL
             """)
             conn.execute(reset_query)
             conn.commit()
             return True
     except Exception as e:
         print(f"Error resetting match status: {e}")
+        return False
+
+def reset_match_status_for_companies(lender_company, borrower_company, month=None, year=None):
+    """Reset match status for specific company pair and period"""
+    try:
+        with engine.connect() as conn:
+            query = """
+                UPDATE tally_data 
+                SET match_status = 'unmatched', 
+                    matched_with = NULL,
+                    match_method = NULL,
+                    audit_info = NULL,
+                    date_matched = NULL
+                WHERE (
+                    (lender = :lender_company AND borrower = :borrower_company)
+                    OR (lender = :borrower_company AND borrower = :lender_company)
+                )
+            """
+            params = {
+                'lender_company': lender_company,
+                'borrower_company': borrower_company
+            }
+            if month:
+                query += ' AND statement_month = :month'
+                params['month'] = month
+            if year:
+                query += ' AND statement_year = :year'
+                params['year'] = year
+            
+            conn.execute(text(query), params)
+            conn.commit()
+            return True
+    except Exception as e:
+        print(f"Error resetting match status for companies: {e}")
         return False
 
 def get_column_order():
@@ -973,29 +911,52 @@ def get_data_by_pair_id(pair_id):
         return []
 
 def get_all_pair_ids():
-    """Get all unique pair IDs"""
+    """Get all unique pair IDs and individual uploads"""
     try:
         ensure_table_exists('tally_data')
         
-        sql = """
+        # First, try to get file pairs
+        pairs_sql = """
         SELECT DISTINCT pair_id, 
                COUNT(*) as record_count,
                MIN(input_date) as upload_date
         FROM tally_data 
-        WHERE pair_id IS NOT NULL
+        WHERE pair_id IS NOT NULL AND pair_id != ''
         GROUP BY pair_id
         ORDER BY upload_date DESC
         """
         
-        df = pd.read_sql(sql, engine)
+        df_pairs = pd.read_sql(pairs_sql, engine)
+        
+        # Also get individual file uploads (records without pair_id but with input_date)
+        individual_sql = """
+        SELECT 
+               CONCAT('individual_', DATE(input_date)) as pair_id,
+               COUNT(*) as record_count,
+               MIN(input_date) as upload_date
+        FROM tally_data 
+        WHERE (pair_id IS NULL OR pair_id = '') AND input_date IS NOT NULL
+        GROUP BY DATE(input_date)
+        ORDER BY upload_date DESC
+        """
+        
+        try:
+            df_individual = pd.read_sql(individual_sql, engine)
+        except Exception as e:
+            print(f"Warning: Could not get individual uploads: {e}")
+            df_individual = pd.DataFrame()
+        
+        # Combine both results
+        df_combined = pd.concat([df_pairs, df_individual], ignore_index=True)
         
         pairs = []
-        for _, row in df.iterrows():
-            pairs.append({
+        for _, row in df_combined.iterrows():
+            pair_data = {
                 'pair_id': row['pair_id'],
                 'record_count': row['record_count'],
                 'upload_date': row['upload_date']
-            })
+            }
+            pairs.append(pair_data)
         
         return pairs
     except Exception as e:
@@ -1036,6 +997,32 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
     )
     with engine.connect() as conn:
+        # Debug: First check how many total matches exist
+        debug_query = '''
+            SELECT COUNT(*) as total_matches
+            FROM tally_data 
+            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+                AND (
+                    (lender = :lender_company AND borrower = :borrower_company)
+                    OR (lender = :borrower_company AND borrower = :lender_company)
+                )
+        '''
+        debug_params = {
+            'lender_company': lender_company,
+            'borrower_company': borrower_company
+        }
+        if month:
+            debug_query += ' AND statement_month = :month'
+            debug_params['month'] = month
+        if year:
+            debug_query += ' AND statement_year = :year'
+            debug_params['year'] = year
+        
+        debug_result = conn.execute(text(debug_query), debug_params)
+        total_matches = debug_result.fetchone()[0]
+        print(f"DEBUG: Total matches found: {total_matches}")
+        
+        # Main query
         query = '''
             SELECT 
                 t1.*,
@@ -1045,13 +1032,12 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
                 t2.Date as matched_date,
                 t2.Debit as matched_Debit, 
                 t2.Credit as matched_Credit,
-                t2.keywords as matched_keywords,
                 t2.uid as matched_uid,
                 t2.Vch_Type as matched_Vch_Type,
                 t2.role as matched_role
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'matched'
+            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed' OR t1.match_status = 'pending_verification')
                 AND (
                     (t1.lender = :lender_company AND t1.borrower = :borrower_company)
                     OR (t1.lender = :borrower_company AND t1.borrower = :lender_company)
@@ -1073,6 +1059,119 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         for row in result:
             record = dict(row._mapping)
             records.append(record)
+        
+        print(f"DEBUG: Records returned: {len(records)}")
+        
+        # Debug: Check for records with NULL matched_with
+        null_join_query = '''
+            SELECT COUNT(*) as null_joins
+            FROM tally_data 
+            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+                AND matched_with IS NULL
+                AND (
+                    (lender = :lender_company AND borrower = :borrower_company)
+                    OR (lender = :borrower_company AND borrower = :lender_company)
+                )
+        '''
+        null_params = {
+            'lender_company': lender_company,
+            'borrower_company': borrower_company
+        }
+        if month:
+            null_join_query += ' AND statement_month = :month'
+            null_params['month'] = month
+        if year:
+            null_join_query += ' AND statement_year = :year'
+            null_params['year'] = year
+        
+        null_result = conn.execute(text(null_join_query), null_params)
+        null_joins = null_result.fetchone()[0]
+        print(f"DEBUG: Records with NULL matched_with: {null_joins}")
+        
+        # Show which specific UIDs have NULL matched_with
+        if null_joins > 0:
+            null_details_query = '''
+                SELECT uid, lender, borrower, statement_month, statement_year, match_status, matched_with
+                FROM tally_data 
+                WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+                    AND matched_with IS NULL
+                    AND (
+                        (lender = :lender_company AND borrower = :borrower_company)
+                        OR (lender = :borrower_company AND borrower = :lender_company)
+                    )
+            '''
+            if month:
+                null_details_query += ' AND statement_month = :month'
+            if year:
+                null_details_query += ' AND statement_year = :year'
+            
+            null_details_result = conn.execute(text(null_details_query), null_params)
+            for row in null_details_result:
+                print(f"DEBUG: NULL matched_with record: {row.uid} - {row.lender} ↔ {row.borrower}")
+        
+        # Find which match is incomplete (missing one side)
+        print("DEBUG: Analyzing match completeness...")
+        all_matched_uids = set()
+        for record in records:
+            if record['uid']:
+                all_matched_uids.add(record['uid'])
+            if record['matched_uid']:
+                all_matched_uids.add(record['matched_uid'])
+        
+        print(f"DEBUG: Total unique UIDs in matches: {len(all_matched_uids)}")
+        print(f"DEBUG: Expected UIDs for 9 matches: 18")
+        print(f"DEBUG: Missing UIDs: {18 - len(all_matched_uids)}")
+        
+        # Find which UID is missing
+        all_uids_in_db_query = '''
+            SELECT uid FROM tally_data 
+            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+                AND (
+                    (lender = :lender_company AND borrower = :borrower_company)
+                    OR (lender = :borrower_company AND borrower = :lender_company)
+                )
+        '''
+        if month:
+            all_uids_in_db_query += ' AND statement_month = :month'
+        if year:
+            all_uids_in_db_query += ' AND statement_year = :year'
+        
+        all_uids_result = conn.execute(text(all_uids_in_db_query), params)
+        all_uids_in_db = {row.uid for row in all_uids_result}
+        
+        missing_uids = all_uids_in_db - all_matched_uids
+        if missing_uids:
+            print(f"DEBUG: Missing UIDs from matches: {missing_uids}")
+        
+        # Check for records that exist but don't appear in JOIN results
+        print(f"DEBUG: All UIDs in DB: {len(all_uids_in_db)}")
+        print(f"DEBUG: UIDs in JOIN results: {len(all_matched_uids)}")
+        
+        # Find records that have matched_with but the matched record doesn't exist
+        orphaned_query = '''
+            SELECT t1.uid, t1.matched_with, t1.lender, t1.borrower
+            FROM tally_data t1
+            LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
+            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed' OR t1.match_status = 'pending_verification')
+                AND t1.matched_with IS NOT NULL
+                AND t2.uid IS NULL
+                AND (
+                    (t1.lender = :lender_company AND t1.borrower = :borrower_company)
+                    OR (t1.lender = :borrower_company AND t1.borrower = :lender_company)
+                )
+        '''
+        if month:
+            orphaned_query += ' AND t1.statement_month = :month'
+        if year:
+            orphaned_query += ' AND t1.statement_year = :year'
+        
+        orphaned_result = conn.execute(text(orphaned_query), params)
+        orphaned_records = list(orphaned_result)
+        if orphaned_records:
+            print(f"DEBUG: Orphaned records (matched_with points to non-existent record): {len(orphaned_records)}")
+            for record in orphaned_records:
+                print(f"DEBUG: Orphaned: {record.uid} -> {record.matched_with}")
+        
         return records 
 
 def get_unreconciled_company_pairs():
@@ -1112,3 +1211,117 @@ def get_unreconciled_company_pairs():
             })
         
         return pairs 
+
+
+def get_matched_company_pairs():
+    """Get company pairs that have matches (confirmed, pending, or matched status)"""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    with engine.connect() as conn:
+        # Get all unique company combinations with their statement periods
+        # Include those that have matches (matched, confirmed, or pending_verification status)
+        result = conn.execute(text("""
+            SELECT DISTINCT 
+                LEAST(lender, borrower) as company1,
+                GREATEST(lender, borrower) as company2,
+                statement_month,
+                statement_year,
+                COUNT(*) as transaction_count
+            FROM tally_data 
+            WHERE lender IS NOT NULL AND borrower IS NOT NULL
+            AND lender != borrower
+            AND (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+            GROUP BY LEAST(lender, borrower), GREATEST(lender, borrower), statement_month, statement_year
+            HAVING transaction_count >= 2
+            ORDER BY statement_year DESC, statement_month DESC, company1, company2
+        """))
+        
+        pairs = []
+        for row in result:
+            pairs.append({
+                'lender_company': row.company1,
+                'borrower_company': row.company2,
+                'month': row.statement_month,
+                'year': row.statement_year,
+                'transaction_count': row.transaction_count,
+                'description': f"{row.company1} ↔ {row.company2} ({row.statement_month} {row.statement_year})"
+            })
+        
+        return pairs
+
+
+def truncate_table():
+    """Truncate the tally_data table - DANGEROUS OPERATION"""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    try:
+        with engine.connect() as conn:
+            # Get count before truncate
+            result = conn.execute(text("SELECT COUNT(*) FROM tally_data"))
+            count_before = result.fetchone()[0]
+            
+            # Truncate the table
+            conn.execute(text("TRUNCATE TABLE tally_data"))
+            conn.commit()
+            
+            # Get count after truncate
+            result = conn.execute(text("SELECT COUNT(*) FROM tally_data"))
+            count_after = result.fetchone()[0]
+            
+            return {
+                'success': True,
+                'message': f'Table truncated successfully. Removed {count_before} records.',
+                'records_removed': count_before,
+                'records_remaining': count_after
+            }
+            
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+def reset_all_matches():
+    """Reset all match status columns - makes all transactions available for matching again"""
+    engine = create_engine(
+        f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
+    )
+    
+    try:
+        with engine.connect() as conn:
+            # Get count of matched records before reset
+            result = conn.execute(text("SELECT COUNT(*) FROM tally_data WHERE match_status IS NOT NULL"))
+            matched_count = result.fetchone()[0]
+            
+            # Reset all match-related columns
+            conn.execute(text("""
+                UPDATE tally_data 
+                SET match_status = NULL,
+                    matched_with = NULL,
+                    match_method = NULL,
+                    audit_info = NULL,
+                    date_matched = NULL
+                WHERE match_status IS NOT NULL
+            """))
+            conn.commit()
+            
+            # Get count after reset
+            result = conn.execute(text("SELECT COUNT(*) FROM tally_data WHERE match_status IS NOT NULL"))
+            remaining_matched = result.fetchone()[0]
+            
+            return {
+                'success': True,
+                'message': f'All matches reset successfully. Reset {matched_count} matched records.',
+                'records_reset': matched_count,
+                'remaining_matched': remaining_matched
+            }
+            
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        } 
