@@ -38,13 +38,14 @@ def extract_company_name(metadata: pd.DataFrame) -> Tuple[str, str, int]:
                 company_name = re.sub(r'\s*[Aa]ccount\.?\s*$', '', company_name).strip()
                 company_name = re.sub(r'\s*[Ll]edger\.?\s*$', '', company_name).strip()
                 # Debug print to see what's being extracted
+                # print(f"DEBUG: Extracted company name: '{company_name}' from cell: '{cell}'")
                 return company_name, cell, i
     
     # Fallback: use first non-empty cell
     for i, row in metadata.iterrows():
         cell = str(row[0]).strip()
         if cell and cell not in ['', 'None', 'nan']:
-
+            # print(f"DEBUG: Using fallback company name: '{cell}' from cell: '{cell}'")
             return cell, cell, i
     
     return "Unknown Company", "", 0
@@ -243,7 +244,10 @@ def parse_tally_file(file_path: str, sheet_name: str) -> pd.DataFrame:
     df['borrower'] = [pair[1] for pair in lender_borrower_pairs]
     
     # Debug print to see what's being assigned
-    
+    # print(f"DEBUG: Current company: '{current_company}'")
+    # print(f"DEBUG: Counterparty: '{counterparty}'")
+    # print(f"DEBUG: Sample lender values: {df['lender'].head().tolist()}")
+    # print(f"DEBUG: Sample borrower values: {df['borrower'].head().tolist()}")
 
     if "Date" in df.columns:
         df["Date"] = pd.to_datetime(
