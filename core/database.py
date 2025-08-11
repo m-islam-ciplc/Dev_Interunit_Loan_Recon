@@ -218,37 +218,60 @@ def update_matches(matches):
                 else:
                     keywords = 'Interunit loan keywords'
 
-            # Add match-specific details to audit trail
+            # Add match-specific details to audit trail with strict ordering where applicable
             if match['match_type'] == 'PO':
-                # Store PO specific audit information
-                audit_info['po_number'] = match.get('po', '')
-                audit_info['lender_amount'] = match.get('amount', '')
-                audit_info['borrower_amount'] = match.get('amount', '')
+                # Ordered: type/method -> po_number -> amounts
+                ordered_audit = {
+                    'match_type': match['match_type'],
+                    'match_method': match_method,
+                    'po_number': match.get('po', ''),
+                    'lender_amount': match.get('amount', ''),
+                    'borrower_amount': match.get('amount', '')
+                }
+                audit_info = ordered_audit
             elif match['match_type'] == 'LC':
-                # Store LC specific audit information
-                audit_info['lc_number'] = match.get('lc', '')
-                audit_info['lender_amount'] = match.get('amount', '')
-                audit_info['borrower_amount'] = match.get('amount', '')
+                # Ordered: type/method -> lc_number -> amounts
+                ordered_audit = {
+                    'match_type': match['match_type'],
+                    'match_method': match_method,
+                    'lc_number': match.get('lc', ''),
+                    'lender_amount': match.get('amount', ''),
+                    'borrower_amount': match.get('amount', '')
+                }
+                audit_info = ordered_audit
             elif match['match_type'] == 'LOAN_ID':
-                # Store LOAN_ID specific audit information
-                audit_info['loan_id'] = match.get('loan_id', '')
-                audit_info['lender_amount'] = match.get('amount', '')
-                audit_info['borrower_amount'] = match.get('amount', '')
+                # Ordered: type/method -> loan_id -> amounts
+                ordered_audit = {
+                    'match_type': match['match_type'],
+                    'match_method': match_method,
+                    'loan_id': match.get('loan_id', ''),
+                    'lender_amount': match.get('amount', ''),
+                    'borrower_amount': match.get('amount', '')
+                }
+                audit_info = ordered_audit
             elif match['match_type'] == 'SALARY':
-                # Store SALARY specific audit information
-                audit_info['person'] = match.get('person', '')
-                audit_info['period'] = match.get('period', '')
-                audit_info['lender_amount'] = match.get('amount', '')
-                audit_info['borrower_amount'] = match.get('amount', '')
+                # Ordered: type/method -> person -> period -> jaccard -> amounts
+                ordered_audit = {
+                    'match_type': match['match_type'],
+                    'match_method': match_method,
+                    'person': match.get('person', ''),
+                    'period': match.get('period', '')
+                }
                 if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
-                    audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
+                    ordered_audit['jaccard_score'] = match['audit_trail']['jaccard_score']
+                ordered_audit['lender_amount'] = match.get('amount', '')
+                ordered_audit['borrower_amount'] = match.get('amount', '')
+                audit_info = ordered_audit
             elif match['match_type'] == 'FINAL_SETTLEMENT':
-                # Store FINAL_SETTLEMENT specific audit information
-                audit_info['person'] = match.get('person', '')
-                audit_info['lender_amount'] = match.get('amount', '')
-                audit_info['borrower_amount'] = match.get('amount', '')
-                if 'audit_trail' in match:
-                    audit_info.update(match['audit_trail'])
+                # Ordered: type/method -> name -> amounts
+                ordered_audit = {
+                    'match_type': match['match_type'],
+                    'match_method': match_method,
+                    'name': match.get('person', ''),
+                    'lender_amount': match.get('amount', ''),
+                    'borrower_amount': match.get('amount', '')
+                }
+                audit_info = ordered_audit
             elif match['match_type'] == 'COMMON_TEXT':
                 # Store COMMON_TEXT specific audit information
                 audit_info['common_text'] = common_text
