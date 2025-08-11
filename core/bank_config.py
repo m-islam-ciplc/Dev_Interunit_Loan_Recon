@@ -87,6 +87,15 @@ BANK_SPECIFIC_PATTERNS = {
     # }
 }
 
+# Interunit Loan Account Mapping
+# Maps full bank account formats to shortened reference codes
+# Format: 'FULL_ACCOUNT_FORMAT': 'SHORT_REFERENCE'
+INTERUNIT_ACCOUNT_MAPPING = {
+    'Midland Bank PLC-CD-A/C-0011-1050011026': 'MDB#11026',
+    'Midland-CE-0011-1060000331-CI': 'MDB#0331',
+    
+}
+
 def get_bank_mapping():
     """Get the current bank mapping dictionary."""
     return BANK_MAPPING.copy()
@@ -133,3 +142,34 @@ def add_bank_specific_pattern(bank_name, pattern, description):
 def get_bank_specific_patterns():
     """Get bank-specific account patterns."""
     return BANK_SPECIFIC_PATTERNS.copy()
+
+def get_interunit_account_mapping():
+    """Get the interunit loan account mapping dictionary."""
+    return INTERUNIT_ACCOUNT_MAPPING.copy()
+
+def get_short_reference(full_account):
+    """Get shortened reference code from full bank account format."""
+    if not full_account:
+        return None
+    return INTERUNIT_ACCOUNT_MAPPING.get(full_account, None)
+
+def get_full_account(short_reference):
+    """Get full bank account format from shortened reference code."""
+    if not short_reference:
+        return None
+    # Reverse lookup
+    for full_account, short_ref in INTERUNIT_ACCOUNT_MAPPING.items():
+        if short_ref == short_reference:
+            return full_account
+    return None
+
+def add_interunit_account_mapping(full_account, short_reference):
+    """Add a new interunit account mapping."""
+    INTERUNIT_ACCOUNT_MAPPING[full_account] = short_reference
+
+def remove_interunit_account_mapping(full_account):
+    """Remove an interunit account mapping."""
+    if full_account in INTERUNIT_ACCOUNT_MAPPING:
+        del INTERUNIT_ACCOUNT_MAPPING[full_account]
+        return True
+    return False

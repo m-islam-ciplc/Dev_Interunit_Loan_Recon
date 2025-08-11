@@ -203,11 +203,14 @@ class ExportService:
                 lender_record = self._extract_lender_data(row, 'main')
                 borrower_record = self._extract_borrower_data(row, 'matched')
             
+            # Prefer 'match_audit_info' (selected by queries) and fall back to 'audit_info'
+            audit_info_raw = row.get('match_audit_info', row.get('audit_info', ''))
+
             export_row = {
                 **lender_record,
                 **borrower_record,
                 'Match_Method': row.get('match_method', ''),
-                'Audit_Info': self._format_audit_info(row.get('audit_info', ''))
+                'Audit_Info': self._format_audit_info(audit_info_raw)
             }
             
             export_rows.append(export_row)
@@ -278,10 +281,28 @@ class ExportService:
             
             # Format based on match type
             if match_type == 'INTERUNIT_LOAN':
-                if info.get('lender_reference'):
-                    formatted += f"Lender: {info['lender_reference']}\n"
-                if info.get('borrower_reference'):
-                    formatted += f"Borrower: {info['borrower_reference']}\n"
+                # Show lender and borrower account with short ref one after another
+                lender_account = info.get('lender_account')
+                lender_short_ref = info.get('lender_short_ref')
+                borrower_account = info.get('borrower_account')
+                borrower_short_ref = info.get('borrower_short_ref')
+
+                if lender_account or lender_short_ref:
+                    if lender_account and lender_short_ref:
+                        formatted += f"Lender: {lender_account} ({lender_short_ref})\n"
+                    elif lender_account:
+                        formatted += f"Lender: {lender_account}\n"
+                    else:
+                        formatted += f"Lender: {lender_short_ref}\n"
+
+                if borrower_account or borrower_short_ref:
+                    if borrower_account and borrower_short_ref:
+                        formatted += f"Borrower: {borrower_account} ({borrower_short_ref})\n"
+                    elif borrower_account:
+                        formatted += f"Borrower: {borrower_account}\n"
+                    else:
+                        formatted += f"Borrower: {borrower_short_ref}\n"
+
                 if info.get('lender_amount'):
                     formatted += f"Lender Amount: {info['lender_amount']}\n"
                 if info.get('borrower_amount'):

@@ -1,29 +1,27 @@
 """
 Matching Module - Contains all matching algorithms and logic.
-This file now serves as a compatibility layer for the new modular structure.
+Organized into focused, single-purpose submodules.
 """
 
-# Import all matching functions from the new modular structure
-from .matching.po_matcher import extract_po
-from .matching.lc_matcher import extract_lc, normalize_lc_number
-from .matching.loan_matcher import (
+from .po_matcher import extract_po
+from .lc_matcher import extract_lc, normalize_lc_number
+from .loan_matcher import (
     extract_loan_id, 
     extract_normalized_loan_id,
     extract_normalized_loan_id_after_time_loan_phrase,
     has_time_loan_phrase
 )
-from .matching.account_matcher import extract_account_number
-from .matching.salary_matcher import extract_salary_details
-from .matching.settlement_matcher import extract_final_settlement_details
-from .matching.text_matcher import (
+from .account_matcher import extract_account_number
+from .salary_matcher import extract_salary_details
+from .settlement_matcher import extract_final_settlement_details
+from .text_matcher import (
     calculate_jaccard_similarity,
     extract_common_text,
     extract_phrases
 )
-from .matching.interunit_matcher import match_interunit_loans
-from .matching.main_matcher import find_matches
+from .interunit_matcher import match_interunit_loans
+from .main_matcher import find_matches
 
-# Maintain backward compatibility
 __all__ = [
     'extract_po',
     'extract_lc',
@@ -40,4 +38,4 @@ __all__ = [
     'extract_phrases',
     'match_interunit_loans',
     'find_matches'
-] 
+]

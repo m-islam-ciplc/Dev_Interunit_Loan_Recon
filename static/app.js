@@ -1150,7 +1150,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
                 <!-- Match Details Columns -->
                 <td data-column="match_method">${formatMatchMethod(match.match_method)}</td>
                 <td data-column="audit_info">
-                    <div class="audit-info-text">${(formatAuditInfo(match.audit_info) || '').replace(/\n/g, '<br>')}</div>
+                    <div class="audit-info-text">${match.audit_info || ''}</div>
                 </td>
                 <td data-column="actions">
                     ${generateActionButtons(match)}

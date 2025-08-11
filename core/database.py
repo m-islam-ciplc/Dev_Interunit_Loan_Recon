@@ -259,16 +259,37 @@ def update_matches(matches):
                 if 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                     audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
             elif match['match_type'] == 'INTERUNIT_LOAN':
-                # Store INTERUNIT_LOAN specific audit information
+                # Store INTERUNIT_LOAN audit information in a strict key order
                 if 'audit_trail' in match:
-                    audit_info.update(match['audit_trail'])
-                    # Store amount information
-                    audit_info['lender_amount'] = match.get('amount', '')
-                    audit_info['borrower_amount'] = match.get('amount', '')
-                    # Store keywords as string, not object
+                    lender_account = match['audit_trail'].get('lender_account')
+                    lender_short_ref = match['audit_trail'].get('lender_short_ref')
+                    borrower_account = match['audit_trail'].get('borrower_account')
+                    borrower_short_ref = match['audit_trail'].get('borrower_short_ref')
+
+                    ordered_audit = {
+                        'match_type': match['match_type'],
+                        'match_method': match_method,
+                    }
+                    # Desired order: lender_account, lender_short_ref, borrower_account, borrower_short_ref
+                    if lender_account is not None:
+                        ordered_audit['lender_account'] = lender_account
+                    if lender_short_ref is not None:
+                        ordered_audit['lender_short_ref'] = lender_short_ref
+                    if borrower_account is not None:
+                        ordered_audit['borrower_account'] = borrower_account
+                    if borrower_short_ref is not None:
+                        ordered_audit['borrower_short_ref'] = borrower_short_ref
+
+                    # Amounts last
+                    ordered_audit['lender_amount'] = match.get('amount', '')
+                    ordered_audit['borrower_amount'] = match.get('amount', '')
+
+                    # Optional: include flattened keywords string at the end if present
                     if 'keywords' in match['audit_trail']:
                         keywords_dict = match['audit_trail']['keywords']
-                        audit_info['keywords'] = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
+                        ordered_audit['keywords'] = f"Lender: {', '.join(keywords_dict.get('lender_interunit_keywords', []))}, Borrower: {', '.join(keywords_dict.get('borrower_interunit_keywords', []))}"
+
+                    audit_info = ordered_audit
             elif 'audit_trail' in match and 'jaccard_score' in match['audit_trail']:
                 audit_info['jaccard_score'] = match['audit_trail']['jaccard_score']
 
