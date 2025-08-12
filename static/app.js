@@ -1016,14 +1016,12 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
                             <th data-column="lender_particulars">Lender Particulars</th>
                             <th data-column="lender_debit">Lender Debit</th>
                             <th data-column="lender_vch_type">Lender Vch Type</th>
-                            <th data-column="lender_role">Lender Role</th>
                             <!-- Borrower Columns -->
                             <th data-column="borrower_uid">Borrower UID</th>
                             <th data-column="borrower_date">Borrower Date</th>
                             <th data-column="borrower_particulars">Borrower Particulars</th>
                             <th data-column="borrower_credit">Borrower Credit</th>
                             <th data-column="borrower_vch_type">Borrower Vch Type</th>
-                            <th data-column="borrower_role">Borrower Role</th>
                             <!-- Match Details Columns -->
                             <th data-column="match_method">Match Method</th>
                             <th data-column="audit_info">Audit Info</th>
@@ -1150,14 +1148,12 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
                 <td data-column="lender_particulars" class="particulars-cell table-cell-large">${lenderRecord.Particulars || ''}</td>
                 <td data-column="lender_debit" class="amount-cell debit-amount">${formatAmount(lenderRecord.Debit || 0)}</td>
                 <td data-column="lender_vch_type">${lenderRecord.Vch_Type || ''}</td>
-                <td data-column="lender_role"><span class="role-badge lender-role">${lenderRole}</span></td>
                 <!-- Borrower Columns -->
                 <td data-column="borrower_uid" class="uid-cell">${borrowerUid || ''}</td>
                 <td data-column="borrower_date">${formatDate(borrowerRecord.Date)}</td>
                 <td data-column="borrower_particulars" class="particulars-cell table-cell-large">${borrowerRecord.Particulars || ''}</td>
                 <td data-column="borrower_credit" class="amount-cell credit-amount">${formatAmount(borrowerRecord.Credit || 0)}</td>
                 <td data-column="borrower_vch_type">${borrowerRecord.Vch_Type || ''}</td>
-                <td data-column="borrower_role"><span class="role-badge borrower-role">${borrowerRole}</span></td>
                 <!-- Match Details Columns -->
                 <td data-column="match_method">${formatMatchMethod(match.match_method)}</td>
                 <td data-column="audit_info">

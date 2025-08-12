@@ -91,10 +91,21 @@ BANK_SPECIFIC_PATTERNS = {
 # Maps full bank account formats to shortened reference codes
 # Format: 'FULL_ACCOUNT_FORMAT': 'SHORT_REFERENCE'
 INTERUNIT_ACCOUNT_MAPPING = {
-    'Midland Bank PLC-CD-A/C-0011-1050011026': 'MDB#11026',
-    'Midland-CE-0011-1060000331-CI': 'MDB#0331',
-    
-}
+'Brac Bank PLC-CD-A/C-2028701210002': 'BBL#0002',
+'Dhaka Bank-STD-2051501833-CIL': 'DBL#1833',
+'Dutch Bangla Bank Ltd.-SND-1071200003988': 'DBL#3988',
+'Eastern Bank Limited-SND-1011060605503': 'EBL#5503',
+'Eastern Bank OD#1012040163265': 'EBL#3265',
+'Eastern Bank OD#1012210603129': 'EBL#3129',
+'Eastern Bank,STD-1011220144056': 'EBL#4056',
+'Midland Bank Ltd-CE-0011-1060000313': 'MDB#0313',
+'Midland Bank PLC-CD-A/C-0011-1050011026': 'MDB#11026',
+'Midland-CE-0011-1060000331-CI': 'MDB#0331',
+'One Bank-CD/A/C-0011020008826': 'OBL#08826',
+'One Bank-SND-A/C-0013000002451': 'OBL#2451',
+'PBL-SND- 2126312011060': 'PBL#11060',
+'Prime Bank Limited-SND-2126318011502': 'PBL#11502',
+'Prime Bank-CD-2126117010855': 'PBL#10855',}
 
 def get_bank_mapping():
     """Get the current bank mapping dictionary."""
