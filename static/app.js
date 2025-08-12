@@ -400,9 +400,9 @@ function showNotification(message, type = 'info', targetId = 'reconciliation-res
 // Helper function to get badge class for match status
 function getStatusBadgeClass(status) {
     switch(status) {
-        case 'confirmed':
+        case 'user_verified':
             return 'bg-success';
-        case 'matched':
+        case 'automatic':
             return 'bg-warning';
         case 'unmatched':
         default:

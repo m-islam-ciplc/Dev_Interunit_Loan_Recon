@@ -331,9 +331,9 @@ def update_matches(matches):
             
             # Determine match status: auto-accept PO and LC matches, manual verification for MANUAL_VERIFICATION
             if match['match_type'] == 'MANUAL_VERIFICATION':
-                match_status = 'pending_verification'
+                match_status = 'unverified'
             else:
-                match_status = 'confirmed' if auto_accept else 'matched'
+                match_status = 'user_verified' if auto_accept else 'automatic'
             
             # Update the borrower (Credit) record - point to lender
             result1 = conn.execute(text("""
@@ -404,7 +404,7 @@ def get_matched_data():
                 t1.audit_info as match_audit_info
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'matched' OR t1.match_status = 'pending_verification'
+            WHERE t1.match_status = 'automatic' OR t1.match_status = 'unverified'
             ORDER BY t1.date_matched DESC
         """))
         
@@ -423,7 +423,7 @@ def get_auto_matched_data():
     - These are automatically confirmed due to high confidence
     
     Auto-matches are identified by:
-    - match_status = 'confirmed' (automatically accepted)
+    - match_status = 'user_verified' (automatically accepted)
     - match_method IN ('reference_match', 'cross_reference')
       * reference_match: PO, LC, LOAN_ID, FINAL_SETTLEMENT matches
       * cross_reference: INTERUNIT_LOAN matches
@@ -450,7 +450,7 @@ def get_auto_matched_data():
                 t1.audit_info as match_audit_info
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'confirmed' 
+            WHERE t1.match_status = 'user_verified' 
                 AND t1.match_method IN ('reference_match', 'cross_reference')
             ORDER BY t1.date_matched DESC
         """))
@@ -466,7 +466,7 @@ def get_auto_matched_data_by_companies(lender_company, borrower_company, month=N
     """Get auto-matched transactions filtered by company names and optionally by statement period.
     
     Only returns high-confidence auto-matches:
-    - match_status = 'confirmed' (automatically accepted)
+    - match_status = 'user_verified' (automatically accepted)
     - match_method IN ('reference_match', 'cross_reference')
       * reference_match: PO, LC, LOAN_ID, FINAL_SETTLEMENT matches
       * cross_reference: INTERUNIT_LOAN matches
@@ -491,7 +491,7 @@ def get_auto_matched_data_by_companies(lender_company, borrower_company, month=N
                 t2.role as matched_role
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'confirmed' 
+            WHERE t1.match_status = 'user_verified' 
                 AND t1.match_method IN ('reference_match', 'cross_reference')
                 AND (
                     (t1.lender = :lender_company AND t1.borrower = :borrower_company)
@@ -631,7 +631,7 @@ def get_pending_matches():
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
         FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'matched'
+            WHERE t1.match_status = 'automatic'
             ORDER BY t1.date_matched DESC
         """))
         
@@ -658,7 +658,7 @@ def get_confirmed_matches():
                 t2.Vch_Type as matched_Vch_Type, t2.role as matched_role
         FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE t1.match_status = 'confirmed'
+            WHERE t1.match_status = 'user_verified'
             ORDER BY t1.date_matched DESC
         """))
         
@@ -1045,7 +1045,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         debug_query = '''
             SELECT COUNT(*) as total_matches
             FROM tally_data 
-            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+            WHERE (match_status = 'automatic' OR match_status = 'user_verified' OR match_status = 'unverified')
                 AND (
                     (lender = :lender_company AND borrower = :borrower_company)
                     OR (lender = :borrower_company AND borrower = :lender_company)
@@ -1081,7 +1081,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
                 t2.role as matched_role
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed' OR t1.match_status = 'pending_verification')
+            WHERE (t1.match_status = 'automatic' OR t1.match_status = 'user_verified' OR t1.match_status = 'unverified')
                 AND (
                     (t1.lender = :lender_company AND t1.borrower = :borrower_company)
                     OR (t1.lender = :borrower_company AND t1.borrower = :lender_company)
@@ -1110,7 +1110,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         null_join_query = '''
             SELECT COUNT(*) as null_joins
             FROM tally_data 
-            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+            WHERE (match_status = 'automatic' OR match_status = 'user_verified' OR match_status = 'unverified')
                 AND matched_with IS NULL
                 AND (
                     (lender = :lender_company AND borrower = :borrower_company)
@@ -1137,7 +1137,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             null_details_query = '''
                 SELECT uid, lender, borrower, statement_month, statement_year, match_status, matched_with
                 FROM tally_data 
-                WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+                WHERE (match_status = 'automatic' OR match_status = 'user_verified' OR match_status = 'unverified')
                     AND matched_with IS NULL
                     AND (
                         (lender = :lender_company AND borrower = :borrower_company)
@@ -1169,7 +1169,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
         # Find which UID is missing
         all_uids_in_db_query = '''
             SELECT uid FROM tally_data 
-            WHERE (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+            WHERE (match_status = 'automatic' OR match_status = 'user_verified' OR match_status = 'unverified')
                 AND (
                     (lender = :lender_company AND borrower = :borrower_company)
                     OR (lender = :borrower_company AND borrower = :lender_company)
@@ -1196,7 +1196,7 @@ def get_matched_data_by_companies(lender_company, borrower_company, month=None, 
             SELECT t1.uid, t1.matched_with, t1.lender, t1.borrower
             FROM tally_data t1
             LEFT JOIN tally_data t2 ON t1.matched_with = t2.uid
-            WHERE (t1.match_status = 'matched' OR t1.match_status = 'confirmed' OR t1.match_status = 'pending_verification')
+            WHERE (t1.match_status = 'automatic' OR t1.match_status = 'user_verified' OR t1.match_status = 'unverified')
                 AND t1.matched_with IS NOT NULL
                 AND t2.uid IS NULL
                 AND (
@@ -1276,7 +1276,7 @@ def get_matched_company_pairs():
             FROM tally_data 
             WHERE lender IS NOT NULL AND borrower IS NOT NULL
             AND lender != borrower
-            AND (match_status = 'matched' OR match_status = 'confirmed' OR match_status = 'pending_verification')
+            AND (match_status = 'automatic' OR match_status = 'user_verified' OR match_status = 'unverified')
             GROUP BY LEAST(lender, borrower), GREATEST(lender, borrower), statement_month, statement_year
             HAVING transaction_count >= 2
             ORDER BY statement_year DESC, statement_month DESC, company1, company2

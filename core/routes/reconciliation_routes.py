@@ -95,7 +95,7 @@ def accept_match():
         if not uid:
             return jsonify({'error': 'UID is required'}), 400
         
-        success = database.update_match_status(uid, 'confirmed', confirmed_by)
+        success = database.update_match_status(uid, 'user_verified', confirmed_by)
         
         if success:
             return jsonify({'message': 'Match accepted successfully'})

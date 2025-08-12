@@ -86,7 +86,7 @@ class ExportService:
             export_path = os.path.join(self.export_folder, export_filename)
             
             # Apply formatting
-            self._save_formatted_excel(df, export_path, 'matched')
+            self._save_formatted_excel(df, export_path, 'automatic')
             
             return send_from_directory(self.export_folder, export_filename, as_attachment=True)
         
@@ -193,15 +193,15 @@ class ExportService:
             if main_record_debit > 0:
                 # Main record is lender
                 lender_record = self._extract_lender_data(row, 'main')
-                borrower_record = self._extract_borrower_data(row, 'matched')
+                borrower_record = self._extract_borrower_data(row, 'automatic')
             elif matched_record_debit > 0:
                 # Matched record is lender
-                lender_record = self._extract_lender_data(row, 'matched')
+                lender_record = self._extract_lender_data(row, 'automatic')
                 borrower_record = self._extract_borrower_data(row, 'main')
             else:
                 # Default fallback
                 lender_record = self._extract_lender_data(row, 'main')
-                borrower_record = self._extract_borrower_data(row, 'matched')
+                borrower_record = self._extract_borrower_data(row, 'automatic')
             
             # Prefer 'match_audit_info' (selected by queries) and fall back to 'audit_info'
             audit_info_raw = row.get('match_audit_info', row.get('audit_info', ''))
