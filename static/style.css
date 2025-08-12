@@ -309,7 +309,7 @@ h6 {
 
 /* Dynamic table heading rows */
 .matched-header {
-    background-color: #d4edda;
+    background-color: #81bcff;
     padding: 12px 12px;
     border-bottom: 1px solid #e1e6ef;
     border-radius: 8px 8px 0 0;
@@ -322,7 +322,7 @@ h6 {
 }
 
 .unmatched-header {
-    background-color: #ffe6cc;
+    background-color: #febab2;
     padding: 12px 12px;
     border-bottom: 1px solid #e1e6ef;
     border-radius: 8px 8px 0 0;
