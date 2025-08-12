@@ -250,8 +250,8 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                     matched_borrowers.add(borrower['uid'])
                     break
                 
-                # Manual verification match (lowest priority - requires user verification)
-                # This matches records where debit, credit, and entered_by are exactly the same
+                # Potential match (lowest priority - requires user verification)
+                # This identifies records where debit, credit, and entered_by are exactly the same
                 lender_entered_by = lender.get('entered_by', '')
                 borrower_entered_by = borrower.get('entered_by', '')
                 
@@ -261,7 +261,7 @@ def find_matches(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                         'lender_uid': lender['uid'],
                         'borrower_uid': borrower['uid'],
                         'amount': lender['Debit'],
-                        'match_type': 'MANUAL_VERIFICATION',
+                        'match_type': 'POTENTIAL_MATCH',
                         'entered_by': lender_entered_by,
                         'audit_trail': {
                             'match_reason': 'Exact match on debit, credit, and entered_by fields',

@@ -1,9 +1,9 @@
 from sqlalchemy import create_engine, inspect, text
 import pandas as pd
 import json
-from core.config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DB
+from .config import MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DB
 import re
-from core import matching
+from . import matching
 
 engine = create_engine(
     f'mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}/{MYSQL_DB}'
@@ -329,8 +329,8 @@ def update_matches(matches):
             
             audit_json = json.dumps(audit_info_serializable)
             
-            # Determine match status: auto-accept PO and LC matches, manual verification for MANUAL_VERIFICATION
-            if match['match_type'] == 'MANUAL_VERIFICATION':
+            # Determine match status: auto-accept high-confidence matches, manual verification for POTENTIAL_MATCH
+            if match['match_type'] == 'POTENTIAL_MATCH':
                 match_status = 'unverified'
             else:
                 match_status = 'user_verified' if auto_accept else 'automatic'
