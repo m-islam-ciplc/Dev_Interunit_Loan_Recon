@@ -435,9 +435,7 @@ class ExportService:
                     )
                     cell.alignment = wrap_alignment
                     
-                    # Set row height for better text wrapping display
-                    if cell.row > 1:  # Skip header row for height adjustment
-                        worksheet.row_dimensions[cell.row].height = text_wrap_columns[header_value]['height']
+                    # Do not set fixed row heights; allow Excel to auto-fit on open
             else:
                 # For non-text wrap columns, apply standard formatting
                 # Auto-adjust column width based on content
@@ -470,6 +468,10 @@ class ExportService:
                     strike=cell.font.strike,
                     color=cell.font.color
                 )
+
+        # Ensure rows are not locked to a custom height so Excel can auto-fit when opened
+        for row_idx in range(2, worksheet.max_row + 1):
+            worksheet.row_dimensions[row_idx].height = None
 
         # Freeze header row
         worksheet.freeze_panes = "A2"

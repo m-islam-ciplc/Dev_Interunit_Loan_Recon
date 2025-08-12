@@ -256,6 +256,17 @@ function displayData(data, columnOrder) {
         return;
     }
     
+    // Sort by ID (numeric) to reflect DB-like ordering
+    try {
+        data = [...data].sort((a, b) => {
+            const aId = Number(a.id || a.ID || 0);
+            const bId = Number(b.id || b.ID || 0);
+            return aId - bId;
+        });
+    } catch (e) {
+        console.warn('Could not sort by ID:', e);
+    }
+
     // Use the column order from backend, fallback to Object.keys if not provided
     const columns = columnOrder || Object.keys(data[0]);
     
