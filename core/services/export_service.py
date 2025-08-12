@@ -390,8 +390,8 @@ class ExportService:
     
     def _apply_excel_formatting(self, worksheet, export_type: str):
         """Apply consistent Excel formatting."""
-        # Header formatting
-        header_font = Font(bold=True, size=11, color="FFFFFF")
+        # Header formatting - 9pt font per requirement
+        header_font = Font(bold=True, size=9, color="FFFFFF")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
         header_alignment = Alignment(horizontal='center', vertical='center')
         border = Border(
@@ -457,5 +457,19 @@ class ExportService:
                     if cell.row > 1:  # Skip header row
                         cell.alignment = Alignment(horizontal='left', vertical='top')
         
+        # Apply 9pt font to all data cells (rows after header)
+        for row_idx in range(2, worksheet.max_row + 1):
+            for cell in worksheet[row_idx]:
+                cell.font = Font(
+                    name=cell.font.name,
+                    size=9,
+                    bold=cell.font.bold,
+                    italic=cell.font.italic,
+                    vertAlign=cell.font.vertAlign,
+                    underline=cell.font.underline,
+                    strike=cell.font.strike,
+                    color=cell.font.color
+                )
+
         # Freeze header row
         worksheet.freeze_panes = "A2"
