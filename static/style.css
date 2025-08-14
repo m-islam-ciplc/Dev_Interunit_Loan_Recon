@@ -152,7 +152,7 @@ code {
 /* Menu styles */
 .menu-item {
     color: #697a8d;
-    background: rgba(0, 150, 255, 0.2);
+    background: transparent;
     font-weight: 600;
     border-radius: 6px;
     padding: 5px 0.5rem;
@@ -161,25 +161,34 @@ code {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.3s ease;
     cursor: pointer;
     font-size: 14px;
     border-left: 3px solid transparent;
 }
 
-.menu-item.active, .menu-item[aria-expanded="true"] {
-    background: rgba(0, 191, 255, 0.3);
-    color: #697a8d;
-    border-left: 3px solid #00bfff;
+.custom-sidebar .menu-item[aria-expanded="true"] {
+    background: rgba(105, 108, 255, 0.2) !important;
+    color: #696cff !important;
+    border-left: 3px solid #696cff !important;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2) !important;
 }
 
-.menu-item:hover, .menu-item[aria-expanded="true"] {
-    background: rgba(0, 191, 255, 0.3);
-    color: #697a8d;
+.menu-item:hover:not([aria-expanded="true"]) {
+    background: #f5f5f9;
+    color: #566a7f;
+    transform: translateX(2px);
+    box-shadow: 0 2px 6px rgba(133, 146, 163, 0.1);
 }
 
-.menu-item:hover i, .menu-item[aria-expanded="true"] i {
-    color: #697a8d;
+.menu-item:hover i:not([aria-expanded="true"] i) {
+    color: #566a7f;
+    transform: scale(1.1);
+}
+
+.menu-item[aria-expanded="true"] i {
+    color: #696cff !important;
+    transform: scale(1.1);
 }
 
 .menu-item i {
@@ -188,6 +197,7 @@ code {
 
 .menu-item[aria-expanded="true"] .bi-chevron-right {
     transform: rotate(90deg);
+    transition: transform 0.3s ease;
 }
 
 .submenu-list {
@@ -203,30 +213,36 @@ code {
     color: #697a8d;
     padding-left: 2.2rem;
     border-left: none;
-    background: #fff;
+    background: transparent;
     font-weight: 400;
     margin-top: 2px;
     margin-bottom: 2px;
     padding-top: 4px;
     padding-bottom: 4px;
-    transition: background 0.2s, color 0.2s;
+    transition: all 0.3s ease;
     text-decoration: none;
     font-size: 14px;
+    border-radius: 4px;
+    border: 1px solid transparent;
 }
 
 .submenu-item:hover {
-    background: rgba(0, 191, 255, 0.3);
-    color: #697a8d;
+    background: #f5f5f9;
+    color: #566a7f;
+    transform: translateX(4px);
+    box-shadow: 0 1px 4px rgba(133, 146, 163, 0.1);
+    border-color: rgba(133, 146, 163, 0.2);
 }
 
 .menu-item .bi-chevron-down {
     font-size: 0.9em;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease;
     transform: rotate(-90deg);
 }
 
 .menu-item[aria-expanded="true"] .bi-chevron-down {
     transform: rotate(0deg);
+    transition: transform 0.3s ease;
 }
 
 /* Topbar */
@@ -582,58 +598,64 @@ td[data-column="actions"] .btn:last-child {
     color: #fff !important;
 } 
 
-/* Ocean Theme Button Styles - Colors Only */
+/* Sneat Theme Button Styles */
 .btn-primary {
-    background: linear-gradient(135deg, #0096ff, #00bcd4) !important;
+    background: #696cff !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(0, 150, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #00bfff, #00bcd4) !important;
-    box-shadow: 0 4px 12px rgba(0, 191, 255, 0.4) !important;
+    background: #7a7dff !important;
+    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.4) !important;
     transform: translateY(-1px) !important;
 }
 
 .btn-secondary {
-    background: rgba(0, 150, 255, 0.1) !important;
-    border: 1px solid #0096ff !important;
-    color: #0096ff !important;
+    background: rgba(105, 108, 255, 0.1) !important;
+    border: 1px solid #696cff !important;
+    color: #696cff !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-secondary:hover {
-    background: rgba(0, 191, 255, 0.2) !important;
-    border-color: #00bfff !important;
-    color: #00bfff !important;
+    background: rgba(105, 108, 255, 0.2) !important;
+    border-color: #7a7dff !important;
+    color: #7a7dff !important;
 }
 
 .btn-success {
-    background: #00bcd4 !important;
+    background: #71dd37 !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(0, 188, 212, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(113, 221, 55, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-warning {
-    background: #ff9800 !important;
+    background: #ffab00 !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(255, 171, 0, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-danger {
-    background: #e74c3c !important;
+    background: #ff3e1d !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-info {
-    background: #17a2b8 !important;
+    background: #03c3ec !important;
     border: none !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(3, 195, 236, 0.3) !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-light {
@@ -651,68 +673,74 @@ td[data-column="actions"] .btn:last-child {
 
 /* Outline buttons */
 .btn-outline-primary {
-    color: #0096ff !important;
-    border-color: #0096ff !important;
+    color: #696cff !important;
+    border-color: #696cff !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-outline-primary:hover {
-    background: #0096ff !important;
+    background: #696cff !important;
     color: white !important;
 }
 
 .btn-outline-secondary {
-    color: #6c757d !important;
-    border-color: #6c757d !important;
+    color: #8592a3 !important;
+    border-color: #8592a3 !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-outline-secondary:hover {
-    background: #6c757d !important;
+    background: #8592a3 !important;
     color: white !important;
 }
 
 .btn-outline-success {
-    color: #00bcd4 !important;
-    border-color: #00bcd4 !important;
+    color: #71dd37 !important;
+    border-color: #71dd37 !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-outline-success:hover {
-    background: #00bcd4 !important;
+    background: #71dd37 !important;
     color: white !important;
 }
 
 .btn-outline-warning {
-    color: #ff9800 !important;
-    border-color: #ff9800 !important;
+    color: #ffab00 !important;
+    border-color: #ffab00 !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-outline-warning:hover {
-    background: #ff9800 !important;
+    background: #ffab00 !important;
     color: white !important;
 }
 
 .btn-outline-danger {
-    color: #e74c3c !important;
-    border-color: #e74c3c !important;
+    color: #ff3e1d !important;
+    border-color: #ff3e1d !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-outline-danger:hover {
-    background: #e74c3c !important;
+    background: #ff3e1d !important;
     color: white !important;
 }
 
 .btn-outline-info {
-    color: #17a2b8 !important;
-    border-color: #17a2b8 !important;
+    color: #03c3ec !important;
+    border-color: #03c3ec !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-outline-info:hover {
-    background: #17a2b8 !important;
+    background: #03c3ec !important;
     color: white !important;
 }
 
@@ -767,41 +795,44 @@ td[data-column="actions"] .btn:last-child {
     font-weight: bold !important;
 } 
 
-/* Ocean Theme for File Upload Buttons - Colors Only */
+/* Sneat Theme for Small Buttons */
 .btn-sm.btn-outline-primary {
-    color: #0096ff !important;
-    border-color: #0096ff !important;
+    color: #696cff !important;
+    border-color: #696cff !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-sm.btn-outline-primary:hover {
-    background: #0096ff !important;
+    background: #696cff !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(0, 150, 255, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.3) !important;
 }
 
 .btn-sm.btn-secondary {
-    background: rgba(0, 150, 255, 0.1) !important;
-    border: 1px solid #0096ff !important;
-    color: #0096ff !important;
+    background: rgba(105, 108, 255, 0.1) !important;
+    border: 1px solid #696cff !important;
+    color: #696cff !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-sm.btn-secondary:hover {
-    background: rgba(0, 191, 255, 0.2) !important;
-    border-color: #00bfff !important;
-    color: #00bfff !important;
+    background: rgba(105, 108, 255, 0.2) !important;
+    border-color: #7a7dff !important;
+    color: #7a7dff !important;
 }
 
 .btn-sm.btn-outline-danger {
-    color: #e74c3c !important;
-    border-color: #e74c3c !important;
+    color: #ff3e1d !important;
+    border-color: #ff3e1d !important;
     background: transparent !important;
+    transition: all 0.3s ease !important;
 }
 
 .btn-sm.btn-outline-danger:hover {
-    background: #e74c3c !important;
+    background: #ff3e1d !important;
     color: white !important;
-    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.3) !important;
 }
 
 /* AND Button Styling */

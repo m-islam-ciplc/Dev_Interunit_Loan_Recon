@@ -10,6 +10,24 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <!-- Custom CSS - Load after Bootstrap to override if needed -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <script>
+        // Ensure only one menu item is active at a time
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuItems = document.querySelectorAll('.menu-item[data-bs-toggle="collapse"]');
+            
+            menuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // Remove active state from all other menu items
+                    menuItems.forEach(otherItem => {
+                        if (otherItem !== this) {
+                            otherItem.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
 </head>
 <body>
 <div class="topbar"><span class="topbar-title">***DEV*** Interunit Loan Reconciler ***DEV*** </span></div>
