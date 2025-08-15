@@ -334,7 +334,7 @@ body .submenu-item[aria-current="page"] {
 .topbar-title {
     color: #697a8d;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: bold;
     margin: 0;
 }
 
@@ -683,7 +683,7 @@ td[data-column="actions"] .btn:last-child {
     color: #fff;
 } 
 
-/* Sneat Theme Button Styles */
+/* Sneat Theme Button Styles - Consistent Box Shadows */
 .btn-primary {
     background: #696cff;
     border: none;
@@ -702,6 +702,7 @@ td[data-column="actions"] .btn:last-child {
     background: rgba(105, 108, 255, 0.1);
     border: 1px solid #696cff;
     color: #696cff;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
     transition: all 0.3s ease;
 }
 
@@ -709,6 +710,8 @@ td[data-column="actions"] .btn:last-child {
     background: rgba(105, 108, 255, 0.2);
     border-color: #7a7dff;
     color: #7a7dff;
+    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-success {
@@ -719,12 +722,24 @@ td[data-column="actions"] .btn:last-child {
     transition: all 0.3s ease;
 }
 
+.btn-success:hover {
+    background: #82ee48;
+    box-shadow: 0 4px 12px rgba(113, 221, 55, 0.4);
+    transform: translateY(-1px);
+}
+
 .btn-warning {
     background: #ffab00;
     border: none;
     color: white;
     box-shadow: 0 2px 8px rgba(255, 171, 0, 0.3);
     transition: all 0.3s ease;
+}
+
+.btn-warning:hover {
+    background: #ffbb11;
+    box-shadow: 0 4px 12px rgba(255, 171, 0, 0.4);
+    transform: translateY(-1px);
 }
 
 .btn-danger {
@@ -735,6 +750,12 @@ td[data-column="actions"] .btn:last-child {
     transition: all 0.3s ease;
 }
 
+.btn-danger:hover {
+    background: #ff4f2e;
+    box-shadow: 0 4px 12px rgba(255, 62, 29, 0.4);
+    transform: translateY(-1px);
+}
+
 .btn-info {
     background: #03c3ec;
     border: none;
@@ -743,10 +764,24 @@ td[data-column="actions"] .btn:last-child {
     transition: all 0.3s ease;
 }
 
+.btn-info:hover {
+    background: #14d4fd;
+    box-shadow: 0 4px 12px rgba(3, 195, 236, 0.4);
+    transform: translateY(-1px);
+}
+
 .btn-light {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
     color: #495057;
+    box-shadow: 0 2px 8px rgba(73, 80, 87, 0.2);
+    transition: all 0.3s ease;
+}
+
+.btn-light:hover {
+    background: #e9ecef;
+    box-shadow: 0 4px 12px rgba(73, 80, 87, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-dark {
@@ -754,79 +789,104 @@ td[data-column="actions"] .btn:last-child {
     border: none;
     color: white;
     box-shadow: 0 2px 8px rgba(52, 58, 64, 0.3);
+    transition: all 0.3s ease;
 }
 
-/* Outline buttons */
+.btn-dark:hover {
+    background: #454d55;
+    box-shadow: 0 4px 12px rgba(52, 58, 64, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Outline buttons - Consistent Box Shadows */
 .btn-outline-primary {
     color: #696cff;
     border-color: #696cff;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-outline-primary:hover {
     background: #696cff;
     color: white;
+    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-outline-secondary {
     color: #8592a3;
     border-color: #8592a3;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(133, 146, 163, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-outline-secondary:hover {
     background: #8592a3;
     color: white;
+    box-shadow: 0 4px 12px rgba(133, 146, 163, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-outline-success {
     color: #71dd37;
     border-color: #71dd37;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(113, 221, 55, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-outline-success:hover {
     background: #71dd37;
     color: white;
+    box-shadow: 0 4px 12px rgba(113, 221, 55, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-outline-warning {
     color: #ffab00;
     border-color: #ffab00;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(255, 171, 0, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-outline-warning:hover {
     background: #ffab00;
     color: white;
+    box-shadow: 0 4px 12px rgba(255, 171, 0, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-outline-danger {
     color: #ff3e1d;
     border-color: #ff3e1d;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-outline-danger:hover {
     background: #ff3e1d;
     color: white;
+    box-shadow: 0 4px 12px rgba(255, 62, 29, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-outline-info {
     color: #03c3ec;
     border-color: #03c3ec;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(3, 195, 236, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-outline-info:hover {
     background: #03c3ec;
     color: white;
+    box-shadow: 0 4px 12px rgba(3, 195, 236, 0.3);
+    transform: translateY(-1px);
 }
 
 /* Link buttons */
@@ -880,24 +940,27 @@ td[data-column="actions"] .btn:last-child {
     font-weight: bold;
 } 
 
-/* Small Button Styles */
+/* Small Button Styles - Consistent Box Shadows */
 .btn-sm.btn-outline-primary {
     color: #696cff;
     border-color: #696cff;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-sm.btn-outline-primary:hover {
     background: #696cff;
     color: white;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-sm.btn-secondary {
     background: rgba(105, 108, 255, 0.1);
     border: 1px solid #696cff;
     color: #696cff;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
     transition: all 0.3s ease;
 }
 
@@ -905,19 +968,23 @@ td[data-column="actions"] .btn:last-child {
     background: rgba(105, 108, 255, 0.2);
     border-color: #7a7dff;
     color: #7a7dff;
+    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-sm.btn-outline-danger {
     color: #ff3e1d;
     border-color: #ff3e1d;
     background: transparent;
+    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.2);
     transition: all 0.3s ease;
 }
 
 .btn-sm.btn-outline-danger:hover {
     background: #ff3e1d;
     color: white;
-    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 62, 29, 0.3);
+    transform: translateY(-1px);
 }
 
 /* AND Button Styling */
