@@ -6,17 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('recent-uploads-list')) {
         loadRecentUploads();
     }
-});
-
-// Handle browser back/forward buttons
-window.addEventListener('popstate', function(event) {
-    if (event.state && event.state.tab) {
-        showTab(event.state.tab);
-    }
-});
-
-// Prevent submenu collapse when submenu items are clicked
-document.addEventListener('DOMContentLoaded', function() {
+    
+    // Handle submenu item clicks and prevent collapse
     const submenuItems = document.querySelectorAll('.submenu-item');
     submenuItems.forEach(item => {
         item.addEventListener('click', function(e) {
@@ -34,6 +25,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', function(event) {
+    if (event.state && event.state.tab) {
+        showTab(event.state.tab);
+    }
+});
+
+
 
 // Tab switching function
 function showTab(tabName) {
