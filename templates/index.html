@@ -26,6 +26,32 @@
                     });
                 });
             });
+
+            // Handle submenu item clicks - add active class
+            const submenuItems = document.querySelectorAll('.submenu-item');
+            
+            submenuItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // Remove active class from all submenu items
+                    submenuItems.forEach(otherItem => {
+                        otherItem.classList.remove('active');
+                        otherItem.removeAttribute('aria-current');
+                    });
+                    
+                    // Add active class to clicked submenu item
+                    this.classList.add('active');
+                    this.setAttribute('aria-current', 'page');
+                });
+            });
+
+            // Set active state based on current page URL
+            const currentPath = window.location.pathname;
+            submenuItems.forEach(item => {
+                if (item.getAttribute('href') === currentPath) {
+                    item.classList.add('active');
+                    item.setAttribute('aria-current', 'page');
+                }
+            });
         });
     </script>
 </head>
