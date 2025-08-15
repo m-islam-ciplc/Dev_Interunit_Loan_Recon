@@ -131,7 +131,7 @@
                 <h5>Upload Tally Ledgers</h5>
                 <div class="alert alert-info" role="alert">
                     <i class="bi bi-info-circle me-2"></i>
-                    Please select different files for each company. The same file cannot be used for both companies.
+                    <strong>File Upload:</strong> Please select different files for each company. The same file cannot be used for both companies.
                 </div>
                 <form id="tally-upload-form" class="parser-form" enctype="multipart/form-data" autocomplete="off">
                     <!-- First File Upload -->
@@ -189,10 +189,10 @@
                 <h5>Upload Pairs</h5>
                 
                 <div class="mb-4">
-                    <div class="alert alert-info" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>
-                        View uploaded file pairs and their transaction data
-                    </div>
+                                    <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Data Overview:</strong> View uploaded file pairs and their transaction data
+                </div>
                 </div>
                 
                 <div class="mb-3">
@@ -235,7 +235,7 @@
                     </div>
                     <div class="alert alert-info mt-2" role="alert">
                         <i class="bi bi-info-circle me-2"></i>
-                        Select both Company Pair and Statement Period to enable reconciliation
+                        <strong>Selection Required:</strong> Select both Company Pair and Statement Period to enable reconciliation
                     </div>
                 </div>
                 
@@ -246,7 +246,7 @@
                 </div>
                 <div class="alert alert-info mt-2" role="alert">
                     <i class="bi bi-info-circle me-2"></i>
-                    View results in the "View Results > Matched Transactions" menu after reconciliation
+                    <strong>Next Steps:</strong> View results in the "View Results > Matched Transactions" menu after reconciliation
                 </div>
                 <div id="reconciliation-result" style="margin-top:20px;"></div>
             </div>
@@ -348,9 +348,10 @@
             <div class="parser-container parser-container-fullwidth">
                 <h5>Database Management Tools</h5>
                 
-                <div class="alert alert-warning" role="alert">
+                <div class="alert alert-danger alert-dismissible" role="alert">
                     <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Warning:</strong> These operations are irreversible and will permanently delete data.
+                    <strong>CRITICAL WARNING:</strong> These operations are irreversible and will permanently delete data.
+                    <button type="button" class="btn-close" onclick="this.parentElement.remove()">×</button>
                 </div>
                 
                 <!-- Reset All Matches Section -->
@@ -359,8 +360,9 @@
                         <h6 class="mb-0"><i class="bi bi-arrow-clockwise me-2"></i>Reset All Matches</h6>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-light mb-3">
-                            This will reset all match status columns, making all transactions available for matching again. 
+                        <div class="alert alert-warning mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Reset Warning:</strong> This will reset all match status columns, making all transactions available for matching again. 
                             This clears: <code>match_status</code>, <code>matched_with</code>, <code>match_method</code>, <code>audit_info</code>, and <code>date_matched</code>.
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-warning" onclick="resetAllMatches()">
@@ -376,8 +378,9 @@
                         <h6 class="mb-0"><i class="bi bi-trash me-2"></i>Clear All Data</h6>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-light mb-3">
-                            This will permanently delete <strong>ALL</strong> data from the database table. 
+                        <div class="alert alert-danger mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Critical Warning:</strong> This will permanently delete <strong>ALL</strong> data from the database table. 
                             This action cannot be undone.
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="truncateTable()">
