@@ -912,7 +912,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
         return;
     }
     
-    // Deduplicate matches to show only unique matches
+    // Deduplicate matches to show only unique matches (pair-wise)
     const uniqueMatches = deduplicateMatches(matches);
     
     // Sort matches: AUTO-MATCH records first, then others
@@ -1000,6 +1000,11 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
         }
     }
     
+    // Determine if we should show totals: require specific company pair and period
+    const shouldShowTotals = !!(filterContext && filterContext.lenderCompany && filterContext.borrowerCompany && filterContext.month && filterContext.year);
+    let lenderDebitTotal = 0;
+    let borrowerCreditTotal = 0;
+
     let tableHTML = `
         <div class="matched-transactions-wrapper">
             ${contextHeader}
@@ -1010,6 +1015,7 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
                 <table class="matched-transactions-table">
                 <thead>
                     <tr>
+                            <th data-column="sl">SL</th>
                             <!-- Lender Columns -->
                             <th data-column="lender_uid">Lender UID</th>
                             <th data-column="lender_date">Lender Date</th>
@@ -1031,7 +1037,9 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
                 <tbody>
     `;
     
+    let rowIndex = 0;
     uniqueMatches.forEach(match => {
+        rowIndex += 1;
         // Determine which record is lender and which is borrower based on Debit/Credit values
         let lenderRecord, borrowerRecord, lenderUid, borrowerUid, lenderRole, borrowerRole;
         
@@ -1140,8 +1148,17 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
             parseFloat(borrowerRecord.Credit || 0)
         );
         
+        // Accumulate lender debit total if needed
+        if (shouldShowTotals) {
+            const lenderDebitNum = parseFloat(lenderRecord.Debit || 0) || 0;
+            const borrowerCreditNum = parseFloat(borrowerRecord.Credit || 0) || 0;
+            lenderDebitTotal += lenderDebitNum;
+            borrowerCreditTotal += borrowerCreditNum;
+        }
+
         tableHTML += `
             <tr class="match-row">
+                <td data-column="sl" class="text-center">${rowIndex}</td>
                 <!-- Lender Columns -->
                 <td data-column="lender_uid" class="uid-cell">${lenderUid || ''}</td>
                 <td data-column="lender_date">${formatDate(lenderRecord.Date)}</td>
@@ -1166,6 +1183,28 @@ function displayMatches(matches, targetDivId = 'reconciliation-result', filterCo
         `;
     });
     
+    // Append totals row if applicable
+    if (shouldShowTotals) {
+        tableHTML += `
+            <tr class="match-row">
+                <td></td> <!-- SL -->
+                <td></td> <!-- Lender UID -->
+                <td></td> <!-- Lender Date -->
+                <td style="text-align:right; font-weight:700;">Lender Debit Total</td>
+                <td class="amount-cell" style="font-weight:700;">${formatAmount(lenderDebitTotal)}</td>
+                <td></td> <!-- Lender Vch Type -->
+                <td></td> <!-- Borrower UID -->
+                <td></td> <!-- Borrower Date -->
+                <td style=\"text-align:right; font-weight:700;\">Borrower Credit Total</td> <!-- Borrower Particulars -->
+                <td class=\"amount-cell\" style=\"font-weight:700;\">${formatAmount(borrowerCreditTotal)}</td> <!-- Borrower Credit -->
+                <td></td> <!-- Borrower Vch Type -->
+                <td></td> <!-- Match Method -->
+                <td></td> <!-- Audit Info -->
+                <td></td> <!-- Actions -->
+            </tr>
+        `;
+    }
+
     tableHTML += `
                 </tbody>
             </table>
@@ -1206,7 +1245,7 @@ function generateActionButtons(match) {
     // For other match types, show the action buttons
     return `
         <div class="btn-group" role="group" aria-label="Match actions">
-            <button class="btn btn-outline-success btn-sm" onclick="acceptMatch('${match.uid}')" title="Accept Match">
+            <button class="btn btn-outline-success btn-sm" onclick="acceptMatch('${match.uid}', this)" title="Accept Match">
                 ✔
             </button>
             <button class="btn btn-outline-danger btn-sm" onclick="rejectMatch('${match.uid}')" title="Reject Match">
@@ -1217,7 +1256,7 @@ function generateActionButtons(match) {
 }
 
 // Accept/Reject functions
-async function acceptMatch(uid) {
+async function acceptMatch(uid, btnEl = null) {
     try {
         const response = await fetch('/api/accept-match', {
             method: 'POST',
@@ -1234,7 +1273,21 @@ async function acceptMatch(uid) {
         
         if (response.ok) {
             showNotification('Match accepted successfully!', 'success');
-            loadMatches(); // Refresh the matches display
+
+            // If we have the button element, swap action buttons with a blue Manual Match badge
+            if (btnEl) {
+                const actionsTd = btnEl.closest('td');
+                if (actionsTd) {
+                    actionsTd.innerHTML = `
+                        <div class="d-flex justify-content-center align-items-center">
+                            <span class="badge bg-primary text-white px-2 py-2" style="font-size: 10px;">
+                                <i class="bi bi-check2-circle me-1"></i>Manual Match
+                            </span>
+                        </div>
+                    `;
+                }
+            }
+            // Do not force a reload; leave the row visible with the new badge
         } else {
             showNotification(`Failed to accept match: ${result.error}`, 'error');
         }

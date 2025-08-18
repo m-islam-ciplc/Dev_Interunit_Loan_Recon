@@ -40,12 +40,12 @@ class ExportService:
             return str(amount) if amount else "0.00"
     
     def export_matched_transactions(self, filters: Dict[str, Optional[str]]):
-        """Export auto-matched transactions as Excel with proper formatting.
+        """Export confirmed matched transactions (auto or manual) as Excel with proper formatting.
         
-        Only includes high-confidence auto-matches:
-        - PO, LC, LOAN_ID, FINAL_SETTLEMENT, and INTERUNIT_LOAN matches
-        - These are automatically confirmed due to high confidence
-        - Excludes manual matches that require verification"""
+        Includes only confirmed matches:
+        - match_status = 'user_verified' (covers both auto-accepted and user-confirmed manual matches)
+        - Excludes 'automatic' (pending auto) and 'unverified' (potential) records
+        """
         try:
             # Get filtered data - only auto-matched records
             lender_company = filters.get('lender_company')
@@ -53,22 +53,31 @@ class ExportService:
             month = filters.get('month')
             year = filters.get('year')
             
+            # Fetch matched data and filter to confirmed only
             if lender_company and borrower_company:
-                matches = database.get_auto_matched_data_by_companies(lender_company, borrower_company, month, year)
+                matches = database.get_matched_data_by_companies(lender_company, borrower_company, month, year)
             else:
-                matches = database.get_auto_matched_data()
+                matches = database.get_matched_data()
+            # Keep only confirmed rows
+            matches = [m for m in matches if str(m.get('match_status')) == 'user_verified']
             
             if not matches:
-                return jsonify({'error': 'No auto-matched data found'}), 404
+                return jsonify({'error': 'No confirmed matched data found'}), 404
             
             # Process and format data
             export_rows = self._process_matched_data(matches)
+            # Append Action column to indicate Auto-Match vs Manual-Match
+            for row in export_rows:
+                match_method = str(row.get('Match_Method', '') or '')
+                # reference_match and cross_reference are high-confidence auto matches
+                is_auto = match_method in ('reference_match', 'cross_reference')
+                row['Action'] = 'Auto-Match' if is_auto else 'Manual-Match'
             
             # Create Excel file with descriptive filename
             df = pd.DataFrame(export_rows)
             
-            # Generate filename: Auto_Matched_Transactions_Company Pair_Statement Period
-            filename_parts = ['Auto_Matched_Transactions']
+            # Generate filename: Confirmed_Matched_Transactions_Company Pair_Statement Period
+            filename_parts = ['Confirmed_Matched_Transactions']
             
             if lender_company and borrower_company:
                 company_pair = f"{lender_company}-{borrower_company}"
@@ -85,8 +94,61 @@ class ExportService:
             export_filename = f"{'_'.join(filename_parts)}.xlsx"
             export_path = os.path.join(self.export_folder, export_filename)
             
-            # Apply formatting
+            # Apply formatting and append totals row when filters specify a single company pair and period
             self._save_formatted_excel(df, export_path, 'automatic')
+
+            # Re-open workbook to append totals for Lender_Debit and Borrower_Credit if a specific pair and period are selected
+            if lender_company and borrower_company and month and year:
+                try:
+                    from openpyxl import load_workbook
+                    wb = load_workbook(export_path)
+                    ws = wb.active
+                    # Find column indices from header row
+                    header_map = {str(cell.value): idx for idx, cell in enumerate(ws[1], start=1)}
+                    lender_debit_col = header_map.get('Lender_Debit')
+                    borrower_credit_col = header_map.get('Borrower_Credit')
+                    if lender_debit_col:
+                        lender_total = 0.0
+                        for row_idx in range(2, ws.max_row + 1):
+                            val = ws.cell(row=row_idx, column=lender_debit_col).value
+                            try:
+                                lender_total += float(val) if val not in (None, '') else 0.0
+                            except Exception:
+                                try:
+                                    lender_total += float(str(val).replace(',', ''))
+                                except Exception:
+                                    pass
+                        borrower_total = 0.0
+                        if borrower_credit_col:
+                            for row_idx in range(2, ws.max_row + 1):
+                                val = ws.cell(row=row_idx, column=borrower_credit_col).value
+                                try:
+                                    borrower_total += float(val) if val not in (None, '') else 0.0
+                                except Exception:
+                                    try:
+                                        borrower_total += float(str(val).replace(',', ''))
+                                    except Exception:
+                                        pass
+                        # Append a totals row with both labels
+                        ws.append([])
+                        last_row = ws.max_row + 1
+                        particulars_col = header_map.get('Lender_Particulars', 3)
+                        ws.cell(row=last_row, column=particulars_col, value='Lender Debit Total')
+                        ws.cell(row=last_row, column=lender_debit_col, value=float(f"{lender_total:.2f}"))
+                        if borrower_credit_col:
+                            borrower_particulars_col = header_map.get('Borrower_Particulars', particulars_col)
+                            ws.cell(row=last_row, column=borrower_particulars_col, value='Borrower Credit Total')
+                            ws.cell(row=last_row, column=borrower_credit_col, value=float(f"{borrower_total:.2f}"))
+                        from openpyxl.styles import Font
+                        ws.cell(row=last_row, column=particulars_col).font = Font(bold=True)
+                        ws.cell(row=last_row, column=lender_debit_col).font = Font(bold=True)
+                        if borrower_credit_col:
+                            ws.cell(row=last_row, column=borrower_particulars_col).font = Font(bold=True)
+                            ws.cell(row=last_row, column=borrower_credit_col).font = Font(bold=True)
+                        wb.save(export_path)
+                except Exception:
+                    # If anything fails, keep original file without totals rather than erroring export
+                    pass
             
             return send_from_directory(self.export_folder, export_filename, as_attachment=True)
         
@@ -179,7 +241,26 @@ class ExportService:
     
     def _process_matched_data(self, matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Process matched data for export format."""
-        df = pd.DataFrame(matches)
+        # Deduplicate: one row per matched pair (uid, matched_uid)
+        # Prefer the row where the main record is the Lender (Debit > 0)
+        pair_to_row: Dict[str, Dict[str, Any]] = {}
+        for m in matches:
+            uid1 = str(m.get('uid') or '')
+            uid2 = str(m.get('matched_uid') or '')
+            # If either uid missing, fall back to using just uid to avoid dropping
+            pair_key = f"{min(uid1, uid2)}::{max(uid1, uid2)}" if uid1 and uid2 else f"{uid1 or uid2}::"
+            existing = pair_to_row.get(pair_key)
+            if not existing:
+                pair_to_row[pair_key] = m
+            else:
+                # Prefer the representation where main record is lender (Debit > 0)
+                existing_is_lender = float(existing.get('Debit') or 0) > 0
+                current_is_lender = float(m.get('Debit') or 0) > 0
+                if current_is_lender and not existing_is_lender:
+                    pair_to_row[pair_key] = m
+        unique_matches = list(pair_to_row.values())
+
+        df = pd.DataFrame(unique_matches)
         
         # Get dynamic lender/borrower names
         lender_name, borrower_name = self._get_company_names(df)
