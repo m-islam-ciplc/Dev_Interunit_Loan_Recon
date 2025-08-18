@@ -2,6 +2,27 @@
 	--topbar-height: 48px;
 	--sidebar-width: 280px;
 	--bs-font-sans-serif: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+	/* Theme tokens */
+	--color-text: #697a8d;
+	--color-primary: #696cff;
+	--color-success: #71dd37;
+	--color-warning: #ffab00;
+	--color-danger: #fc6348;
+	--color-info: #03c3ec;
+	--color-muted: #8592a3;
+	--shadow-s: 0 2px 8px rgba(0, 0, 0, 0.10);
+	--shadow-m: 0 4px 12px rgba(0, 0, 0, 0.15);
+	--color-surface: #fff;
+	--color-border-light: #e1e6ef;
+	--color-heading: #374767;
+	--color-table-th-bg: #f8f9fa;
+	--color-row-alt: #f6f7fa;
+	--color-row-hover: #f0f0f0;
+	--color-matched-header: #d4edda;
+	--color-unmatched-header: #ffe6cc;
+	--color-table-header-text: #001f3f;
+	--gradient-table-1: rgba(0, 150, 255, 0.1);
+	--gradient-table-2: rgba(0, 188, 212, 0.1);
 }
 
 /* Reset and base styles */
@@ -12,7 +33,7 @@
 body {
     font-family: var(--bs-font-sans-serif);
     background-color: #f5f5f9;
-    color: #697a8d;
+    color: var(--color-text);
     margin: 0;
     padding: 0;
     padding-top: var(--topbar-height);
@@ -39,16 +60,14 @@ code {
     color: #697a8d;
 }
 
-/* Override Bootstrap's d-flex behavior */
+/* Layout flex container (avoid overriding Bootstrap utility semantics) */
 .d-flex {
     display: flex;
-    position: relative;
-    width: 100%;
 }
 
 /* Fixed sidebar */
 .custom-sidebar {
-    position: fixed !important;
+        position: fixed !important;
     left: 0 !important;
     top: 0 !important;
     width: var(--sidebar-width) !important;
@@ -56,7 +75,7 @@ code {
     padding-top: var(--topbar-height) !important;
     padding-left: 16px !important;
     padding-right: 16px !important;
-    background: #fff !important;
+    background: var(--color-surface) !important;
     z-index: 1000 !important;
     overflow-y: auto;
     border-right: none;
@@ -152,7 +171,7 @@ code {
 
 /* Menu styles */
 .menu-item {
-    color: #697a8d;
+    color: var(--color-text);
     background: transparent;
     font-weight: 600;
     border-radius: 6px;
@@ -169,10 +188,10 @@ code {
 }
 
 .custom-sidebar .menu-item[aria-expanded="true"] {
-    background: rgba(105, 108, 255, 0.2) !important;
+    background: var(--primary-20) !important;
     color: #696cff !important;
     border-left: none !important;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2) !important;
+    box-shadow: var(--shadow-menu) !important;
     position: relative;
 }
 
@@ -221,7 +240,7 @@ code {
 }
 
 .submenu-list {
-    background: #fff;
+    background: var(--color-surface);
     display: flex;
     flex-direction: column;
     padding-left: 0;
@@ -230,7 +249,7 @@ code {
 .submenu-item {
     display: block;
     width: 100%;
-    color: #697a8d;
+    color: var(--color-text);
     padding-left: 2.2rem;
     border-left: none;
     background: transparent;
@@ -247,7 +266,7 @@ code {
     position: relative;
 }
 
-/* Sneat-style submenu bullets */
+/* Submenu bullets */
 .submenu-item:before {
     content: "";
     position: absolute;
@@ -257,7 +276,7 @@ code {
     width: 0.375rem;
     height: 0.375rem;
     border-radius: 50%;
-    background-color: #8592a3;
+    background-color: var(--color-muted);
     transition: all 0.3s ease;
 }
 
@@ -275,7 +294,7 @@ code {
     border-color: rgba(133, 146, 163, 0.2);
 }
 
-/* Active submenu styling - Sneat theme style */
+/* Active submenu styling */
 .submenu-item.active:before,
 .submenu-item[aria-current="page"]:before {
     width: 0.375rem;
@@ -318,7 +337,7 @@ body .submenu-item[aria-current="page"] {
 /* Topbar */
 .topbar {
     background: #fff;
-    /* border-bottom: 1px solid #0096ff; */
+    /* border-bottom: 1px solid var(--color-link); */
     height: var(--topbar-height);
     width: 100%;
     margin-left: 0;
@@ -332,7 +351,7 @@ body .submenu-item[aria-current="page"] {
 }
 
 .topbar-title {
-    color: #697a8d;
+    color: var(--color-text);
     font-size: 18px;
     font-weight: bold;
     margin: 0;
@@ -367,37 +386,32 @@ h6 {
 
 
 /* Notifications */
-.alert {
-    font-size: 14px;
-    padding: 6px 10px;
-    color: #697a8d;
-}
 
 /* Dropdowns */
 .dropdown-toggle {
     font-size: 14px;
-    color: #697a8d;
+    color: var(--color-text);
 }
 
 .dropdown-menu {
     font-size: 14px;
-    color: #697a8d;
+    color: var(--color-text);
 }
 
 .dropdown-item {
     font-size: 14px;
-    color: #697a8d;
+    color: var(--color-text);
 }
 
 /* Select dropdowns and placeholder text */
 .form-select {
     font-size: 14px;
-    color: #697a8d;
+    color: var(--color-text);
 }
 
 .form-select option {
     font-size: 14px;
-    color: #697a8d;
+    color: var(--color-text);
 }
 
 /* Recent uploads - now using same design as Reconciliation History */
@@ -426,7 +440,7 @@ h6 {
 
 /* Dynamic table heading rows */
 .matched-header {
-    background-color: #d4edda;
+    background-color: var(--color-matched-header);
     padding: 12px 12px;
     border-bottom: 1px solid #e1e6ef;
     border-radius: 8px 8px 0 0;
@@ -439,7 +453,7 @@ h6 {
 }
 
 .unmatched-header {
-    background-color: #ffe6cc;
+    background-color: var(--color-unmatched-header);
     padding: 12px 12px;
     border-bottom: 1px solid #e1e6ef;
     border-radius: 8px 8px 0 0;
@@ -457,14 +471,14 @@ h6 {
     border-collapse: collapse;
     font-size: 10px;
     font-family: var(--bs-font-sans-serif);
-    background: #fff;
+    background: var(--color-surface);
 }
 
 .matched-transactions-table th, 
 .matched-transactions-table td,
 .unmatched-transactions-table th, 
 .unmatched-transactions-table td {
-    border: 1px solid #e1e6ef;
+    border: 1px solid var(--color-border-light);
     font-size: 10px;
     font-family: var(--bs-font-sans-serif);
     padding: 4px 4px;
@@ -474,8 +488,8 @@ h6 {
 
 .matched-transactions-table th,
 .unmatched-transactions-table th {
-    background: #f8f9fa;
-    color: #374767;
+    background: var(--color-table-th-bg);
+    color: var(--color-heading);
     font-weight: 700;
     text-align: left;
     position: sticky;
@@ -485,12 +499,12 @@ h6 {
 
 .matched-transactions-table tr:nth-child(even),
 .unmatched-transactions-table tr:nth-child(even) {
-    background: #f6f7fa;
+    background: var(--color-row-alt);
 }
 
 .matched-transactions-table tr:hover,
 .unmatched-transactions-table tr:hover {
-    background-color: #f0f0f0;
+    background-color: var(--color-row-hover);
 }
 
 /* Table cell formatting */
@@ -502,7 +516,7 @@ h6 {
     line-height: 1.3;
     font-size: 10px;
     font-family: var(--bs-font-sans-serif);
-    color: #697a8d;
+    color: var(--color-text);
 }
 
 .table th, .matched-transactions-table th, .unmatched-transactions-table th {
@@ -519,9 +533,6 @@ h6 {
 }
 
 /* Amount cells */
-.amount-cell {
-    text-align: right;
-}
 
 /* Date cells - ensure adequate width to prevent wrapping */
 .input-date-cell,
@@ -679,46 +690,46 @@ td[data-column="actions"] .btn:last-child {
 }
 
 .bg-secondary {
-    background-color: #0096ff;
+    background-color: var(--color-link);
     color: #fff;
 } 
 
-/* Sneat Theme Button Styles - Consistent Box Shadows */
+/* Button Styles - Consistent Box Shadows */
 .btn-primary {
-    background: #696cff;
+    background: var(--color-primary);
     border: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.3);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
     background: #7a7dff;
-    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.4);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
 .btn-secondary {
-    background: rgba(105, 108, 255, 0.1);
-    border: 1px solid #696cff;
-    color: #696cff;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
+    background: var(--primary-10);
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
-    background: rgba(105, 108, 255, 0.2);
+    background: var(--primary-20);
     border-color: #7a7dff;
     color: #7a7dff;
-    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
 .btn-success {
-    background: #71dd37;
+    background: var(--color-success);
     border: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(113, 221, 55, 0.3);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
@@ -729,10 +740,10 @@ td[data-column="actions"] .btn:last-child {
 }
 
 .btn-warning {
-    background: #ffab00;
+    background: var(--color-warning);
     border: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(255, 171, 0, 0.3);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
@@ -743,10 +754,10 @@ td[data-column="actions"] .btn:last-child {
 }
 
 .btn-danger {
-    background: #ff3e1d;
+    background: var(--color-danger);
     border: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.3);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
@@ -757,10 +768,10 @@ td[data-column="actions"] .btn:last-child {
 }
 
 .btn-info {
-    background: #03c3ec;
+    background: var(--color-info);
     border: none;
     color: white;
-    box-shadow: 0 2px 8px rgba(3, 195, 236, 0.3);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
@@ -800,32 +811,32 @@ td[data-column="actions"] .btn:last-child {
 
 /* Outline buttons - Consistent Box Shadows */
 .btn-outline-primary {
-    color: #696cff;
-    border-color: #696cff;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
     background: transparent;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-outline-primary:hover {
-    background: #696cff;
+    background: var(--color-primary);
     color: white;
-    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
 .btn-outline-secondary {
-    color: #8592a3;
-    border-color: #8592a3;
+    color: var(--color-muted);
+    border-color: var(--color-muted);
     background: transparent;
-    box-shadow: 0 2px 8px rgba(133, 146, 163, 0.2);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-outline-secondary:hover {
-    background: #8592a3;
+    background: var(--color-muted);
     color: white;
-    box-shadow: 0 4px 12px rgba(133, 146, 163, 0.3);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
@@ -891,12 +902,12 @@ td[data-column="actions"] .btn:last-child {
 
 /* Link buttons */
 .btn-link {
-    color: #0096ff;
+    color: var(--color-link);
     text-decoration: none;
 }
 
 .btn-link:hover {
-    color: #00bfff;
+    color: var(--color-link-hover);
     text-decoration: underline;
 }
 
@@ -914,22 +925,24 @@ td[data-column="actions"] .btn:last-child {
 
 /* Form Focus Styles */
 .form-control:focus {
-    border-color: #0096ff;
+    border-color: var(--color-link);
     box-shadow: 0 0 0 0.2rem rgba(0, 150, 255, 0.25);
 }
 
 .form-select:focus {
-    border-color: #0096ff;
+    border-color: var(--color-link);
     box-shadow: 0 0 0 0.2rem rgba(0, 150, 255, 0.25);
 }
 
 /* Sneat Alert Styles - Professional Notification System */
 .alert {
     position: relative;
-    padding: 0.9375rem 0.9375rem;  /* 15px */
+    padding: 4px 10px;             /* Reduced vertical padding */
     margin-bottom: 1rem;
     border: 0 solid transparent;
     border-radius: 0.375rem;       /* 6px - rounded corners */
+    font-size: var(--font-size-base);
+    color: var(--color-text);
 }
 
 .alert-primary {
@@ -1021,9 +1034,9 @@ td[data-column="actions"] .btn:last-child {
 
 /* Table Header Styles */
 .table thead th {
-    background: linear-gradient(135deg, rgba(0, 150, 255, 0.1), rgba(0, 188, 212, 0.1));
-    border-bottom: 1px solid rgba(0, 150, 255, 0.2);
-    color: #001f3f;
+    background: linear-gradient(135deg, var(--gradient-table-1), var(--gradient-table-2));
+    border-bottom: 1px solid var(--color-table-header-border);
+    color: var(--color-table-header-text);
     font-size: 10px;
     font-family: var(--bs-font-sans-serif);
     font-weight: bold;
@@ -1031,55 +1044,55 @@ td[data-column="actions"] .btn:last-child {
 
 /* Small Button Styles - Consistent Box Shadows */
 .btn-sm.btn-outline-primary {
-    color: #696cff;
-    border-color: #696cff;
+    color: var(--color-primary);
+    border-color: var(--color-primary);
     background: transparent;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-sm.btn-outline-primary:hover {
-    background: #696cff;
+    background: var(--color-primary);
     color: white;
-    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
 .btn-sm.btn-secondary {
-    background: rgba(105, 108, 255, 0.1);
-    border: 1px solid #696cff;
-    color: #696cff;
-    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.2);
+    background: var(--primary-10);
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-sm.btn-secondary:hover {
-    background: rgba(105, 108, 255, 0.2);
-    border-color: #7a7dff;
-    color: #7a7dff;
-    box-shadow: 0 4px 12px rgba(105, 108, 255, 0.3);
+    background: var(--primary-20);
+    border-color: var(--color-primary-hover);
+    color: var(--color-primary-hover);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
 .btn-sm.btn-outline-danger {
-    color: #ff3e1d;
-    border-color: #ff3e1d;
+    color: var(--color-danger);
+    border-color: var(--color-danger);
     background: transparent;
-    box-shadow: 0 2px 8px rgba(255, 62, 29, 0.2);
+    box-shadow: var(--shadow-s);
     transition: all 0.3s ease;
 }
 
 .btn-sm.btn-outline-danger:hover {
-    background: #ff3e1d;
+    background: var(--color-danger);
     color: white;
-    box-shadow: 0 4px 12px rgba(255, 62, 29, 0.3);
+    box-shadow: var(--shadow-m);
     transform: translateY(-1px);
 }
 
 /* AND Button Styling */
 .and-button {
     display: inline-block;
-    background: linear-gradient(135deg, #0096ff, #00bcd4);
+    background: linear-gradient(135deg, var(--gradient-table-1), var(--gradient-table-2));
     color: white;
     border: none;
     border-radius: 4px;
