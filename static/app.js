@@ -15,6 +15,19 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             e.preventDefault();
             
+            // Remove active class from all submenu items
+            submenuItems.forEach(otherItem => {
+                otherItem.classList.remove('active');
+                otherItem.removeAttribute('aria-current');
+            });
+            
+            // Add active class to clicked submenu item
+            this.classList.add('active');
+            this.setAttribute('aria-current', 'page');
+            
+            // Update menu visual state - move shadow to parent of active submenu
+            updateMenuVisualState(this);
+            
             // Get the href and navigate programmatically
             const href = this.getAttribute('href');
             if (href) {
@@ -34,6 +47,25 @@ window.addEventListener('popstate', function(event) {
 });
 
 
+
+// Function to update menu visual state based on active submenu
+function updateMenuVisualState(activeSubmenuItem) {
+    // Remove active visual state from all menu items
+    const allMenuItems = document.querySelectorAll('.menu-item');
+    allMenuItems.forEach(menuItem => {
+        menuItem.classList.remove('menu-active');
+        menuItem.removeAttribute('aria-expanded');
+    });
+    
+    // Find the parent menu item of the active submenu
+    const parentMenu = activeSubmenuItem.closest('.menu-group').querySelector('.menu-item');
+    
+    // Add active visual state to the parent menu
+    if (parentMenu) {
+        parentMenu.classList.add('menu-active');
+        parentMenu.setAttribute('aria-expanded', 'true');
+    }
+}
 
 // Tab switching function
 function showTab(tabName) {

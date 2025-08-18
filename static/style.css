@@ -5,6 +5,7 @@
 	/* Theme tokens */
 	--color-text: #697a8d;
 	--color-primary: #696cff;
+	--primary-20: rgba(105, 108, 255, 0.1);
 	--color-success: #71dd37;
 	--color-warning: #ffab00;
 	--color-danger: #fc6348;
@@ -12,6 +13,7 @@
 	--color-muted: #8592a3;
 	--shadow-s: 0 2px 8px rgba(0, 0, 0, 0.10);
 	--shadow-m: 0 4px 12px rgba(0, 0, 0, 0.15);
+	--shadow-menu: 0 2px 8px rgba(105, 108, 255, 0.15);
 	--color-surface: #fff;
 	--color-border-light: #e1e6ef;
 	--color-heading: #374767;
@@ -187,15 +189,17 @@ code {
     border-left: 3px solid transparent;
 }
 
+.custom-sidebar .menu-item.menu-active,
 .custom-sidebar .menu-item[aria-expanded="true"] {
     background: var(--primary-20) !important;
-    color: #696cff !important;
+    color: var(--color-text) !important;
     border-left: none !important;
-    box-shadow: var(--shadow-menu) !important;
+    box-shadow: 0 2px 8px rgba(105, 108, 255, 0.15) !important;
     position: relative;
 }
 
 /* Rounded vertical indicator for active menu */
+.custom-sidebar .menu-item.menu-active::after,
 .custom-sidebar .menu-item[aria-expanded="true"]::after {
     content: "";
     position: absolute;
@@ -219,8 +223,9 @@ code {
     transform: scale(1.1);
 }
 
+.menu-item.menu-active i,
 .menu-item[aria-expanded="true"] i {
-    color: #696cff !important;
+    color: var(--color-text) !important;
     transform: scale(1.1);
 }
 
@@ -277,7 +282,18 @@ code {
     height: 0.375rem;
     border-radius: 50%;
     background-color: var(--color-muted);
-    transition: all 0.3s ease;
+}
+
+/* Active submenu item styling */
+.submenu-item.active {
+    background: var(--primary-20) !important;
+    color: #696cff !important;
+    border: 1px solid rgba(105, 108, 255, 0.2) !important;
+    font-weight: 600 !important;
+}
+
+.submenu-item.active:before {
+    background-color: #696cff !important;
 }
 
 /* Submenu hover effects */
@@ -294,34 +310,7 @@ code {
     border-color: rgba(133, 146, 163, 0.2);
 }
 
-/* Active submenu styling */
-.submenu-item.active:before,
-.submenu-item[aria-current="page"]:before {
-    width: 0.375rem;
-    height: 0.375rem;
-    background-color: #696cff !important; /* Purple bullet matching text */
-    left: 1.4375rem;
 
-    border: 2px solid #d1d2f7; /* 2px light purple border */
-    box-sizing: content-box; /* Border expands the bullet size */
-}
-
-.submenu-item.active,
-.submenu-item[aria-current="page"] {
-    color: #696cff !important; /* Sneat primary purple */
-    font-weight: 500;
-}
-
-/* Force override any conflicting styles */
-body .submenu-item.active:before,
-body .submenu-item[aria-current="page"]:before {
-    background-color: #696cff !important;
-}
-
-body .submenu-item.active,
-body .submenu-item[aria-current="page"] {
-    color: #696cff !important;
-}
 
 .menu-item .bi-chevron-down {
     font-size: 0.9em;
@@ -329,6 +318,7 @@ body .submenu-item[aria-current="page"] {
     transform: rotate(-90deg);
 }
 
+.menu-item.menu-active .bi-chevron-down,
 .menu-item[aria-expanded="true"] .bi-chevron-down {
     transform: rotate(0deg);
     transition: transform 0.3s ease;
@@ -400,21 +390,7 @@ h6 {
 
 /* Notifications */
 
-/* Dropdowns */
-.dropdown-toggle {
-    font-size: 14px;
-    color: var(--color-text);
-}
 
-.dropdown-menu {
-    font-size: 14px;
-    color: var(--color-text);
-}
-
-.dropdown-item {
-    font-size: 14px;
-    color: var(--color-text);
-}
 
 /* Select dropdowns and placeholder text */
 .form-select {
@@ -603,7 +579,6 @@ td[data-column="borrower_particulars"],
 .date-cell,
 .vch-type-cell,
 .vch-no-cell,
-.amount-cell,
 .uid-cell,
 .lender-cell,
 .borrower-cell,
@@ -622,8 +597,7 @@ td[data-column="debit"],
 td[data-column="credit"],
 td[data-column="amount"],
 td[data-column="lender_debit"],
-td[data-column="borrower_credit"],
-.amount-cell {
+td[data-column="borrower_credit"] {
     text-align: right;
 }
 
@@ -924,17 +898,7 @@ td[data-column="actions"] .btn:last-child {
     text-decoration: underline;
 }
 
-/* Card Styles */
-.card {
-    border: none;
-    box-shadow: none;
-}
 
-.card-header {
-    background: transparent;
-    border-bottom: none;
-    color: #001f3f;
-}
 
 /* Form Focus Styles */
 .form-control:focus {
