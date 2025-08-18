@@ -336,7 +336,7 @@ body .submenu-item[aria-current="page"] {
 
 /* Topbar */
 .topbar {
-    background: #fff;
+    background: var(--color-surface);
     /* border-bottom: 1px solid var(--color-link); */
     height: var(--topbar-height);
     width: 100%;
@@ -348,6 +348,19 @@ body .submenu-item[aria-current="page"] {
     display: flex;
     align-items: center;
     padding: 0 20px;
+    border: none;
+}
+
+/* Topbar shadow from sidebar edge to right */
+.topbar::after {
+    content: "";
+    position: absolute;
+    left: var(--sidebar-width);
+    top: 0;
+    width: calc(100% - var(--sidebar-width));
+    height: 100%;
+    pointer-events: none;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .topbar-title {
