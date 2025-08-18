@@ -1838,7 +1838,13 @@ function displayUnmatchedResults(unmatched, filterContext = null) {
                     <tbody>
     `;
     
+    // Totals
+    let debitTotal = 0;
+    let creditTotal = 0;
+
     unmatched.forEach(record => {
+        debitTotal += parseFloat(record.Debit || 0) || 0;
+        creditTotal += parseFloat(record.Credit || 0) || 0;
         tableHTML += `
             <tr>
                 <td data-column="uid" class="uid-cell">${record.uid || ''}</td>
@@ -1859,7 +1865,24 @@ function displayUnmatchedResults(unmatched, filterContext = null) {
         `;
     });
     
+    // Footer totals row
     tableHTML += `
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td style="text-align:right; font-weight:700;">Totals</td>
+                            <td></td>
+                            <td></td>
+                            <td class="amount-cell text-end" style="font-weight:700;">${formatAmount(debitTotal)}</td>
+                            <td class="amount-cell text-end" style="font-weight:700;">${formatAmount(creditTotal)}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>

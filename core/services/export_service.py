@@ -195,6 +195,56 @@ class ExportService:
             
             # Apply formatting
             self._save_formatted_excel(df, export_path, 'unmatched')
+
+            # If a specific company pair and period are chosen, append totals for Debit and Credit
+            if lender_company and borrower_company and month and year:
+                try:
+                    from openpyxl import load_workbook
+                    wb = load_workbook(export_path)
+                    ws = wb.active
+                    # Map headers to columns
+                    header_map = {str(cell.value): idx for idx, cell in enumerate(ws[1], start=1)}
+                    debit_col = header_map.get('Debit')
+                    credit_col = header_map.get('Credit')
+                    if debit_col or credit_col:
+                        debit_total = 0.0
+                        credit_total = 0.0
+                        for row_idx in range(2, ws.max_row + 1):
+                            if debit_col:
+                                v = ws.cell(row=row_idx, column=debit_col).value
+                                try:
+                                    debit_total += float(v) if v not in (None, '') else 0.0
+                                except Exception:
+                                    try:
+                                        debit_total += float(str(v).replace(',', ''))
+                                    except Exception:
+                                        pass
+                            if credit_col:
+                                v = ws.cell(row=row_idx, column=credit_col).value
+                                try:
+                                    credit_total += float(v) if v not in (None, '') else 0.0
+                                except Exception:
+                                    try:
+                                        credit_total += float(str(v).replace(',', ''))
+                                    except Exception:
+                                        pass
+                        # Append totals row
+                        ws.append([])
+                        last_row = ws.max_row + 1
+                        particulars_col = header_map.get('Particulars', 1)
+                        ws.cell(row=last_row, column=particulars_col, value='Totals')
+                        from openpyxl.styles import Font
+                        ws.cell(row=last_row, column=particulars_col).font = Font(bold=True)
+                        if debit_col:
+                            ws.cell(row=last_row, column=debit_col, value=float(f"{debit_total:.2f}"))
+                            ws.cell(row=last_row, column=debit_col).font = Font(bold=True)
+                        if credit_col:
+                            ws.cell(row=last_row, column=credit_col, value=float(f"{credit_total:.2f}"))
+                            ws.cell(row=last_row, column=credit_col).font = Font(bold=True)
+                        wb.save(export_path)
+                except Exception:
+                    # Keep original file if totals computation fails
+                    pass
             
             return send_from_directory(self.export_folder, export_filename, as_attachment=True)
         
